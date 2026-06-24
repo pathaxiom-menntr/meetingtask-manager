@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
 
 
 class TaskCreate(BaseModel):
@@ -23,3 +24,8 @@ class TaskResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+class TaskUpdate(BaseModel):
+    title: str
+    description: str
+    assignee_id: int
