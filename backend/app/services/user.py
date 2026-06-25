@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.schemas.user import UserCreate
+from app.core.security import hash_password
 
 
 class UserService:
@@ -24,11 +25,12 @@ class UserService:
                 detail="Email already exists"
             )
 
+
         user = User(
             full_name=user_data.full_name,
             email=user_data.email,
-            password_hash=user_data.password
-        )
+            password_hash=hash_password(user_data.password)
+)
 
         try:
             db.add(user)

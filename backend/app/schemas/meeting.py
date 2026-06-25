@@ -5,7 +5,10 @@ from datetime import datetime
 class MeetingCreate(BaseModel):
     title: str
     transcript: str
-    uploaded_by: int
+    
+class MeetingUpdate(BaseModel):
+    title: str | None = None
+    transcript: str | None = None
 
 
 class MeetingResponse(BaseModel):

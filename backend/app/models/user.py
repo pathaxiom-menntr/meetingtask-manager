@@ -9,11 +9,23 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
 
-    full_name = Column(String(100))
+    full_name = Column(
+    String(100),
+    nullable=False
+)
 
-    email = Column(String(255))
+    password_hash = Column(
+    Text,
+    nullable=False
+)
 
-    password_hash = Column(Text)
+    email = Column(
+    String(255),
+    unique=True,
+    nullable=False
+)
+
+    
 
     created_at = Column(
         TIMESTAMP,
