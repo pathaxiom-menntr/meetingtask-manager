@@ -45,24 +45,27 @@ class UserService:
 
     @staticmethod
     def get_users(
-        db: Session
+        db: Session,
+        skip: int = 0,
+        limit: int = 20
     ):
-        return db.query(User).all()
+        return (
+            db.query(User)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     @staticmethod
     def get_user_by_id(
         db: Session,
         user_id: int
     ):
-        print("DEBUG USER ID:", user_id)
-
         user = (
             db.query(User)
             .filter(User.id == user_id)
             .first()
         )
-
-        print("DEBUG USER:", user)
 
         if not user:
             raise HTTPException(

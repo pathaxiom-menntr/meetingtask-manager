@@ -1,0 +1,168 @@
+"use client";
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
+import { CheckSquare, Plus, Filter } from "lucide-react";
+import { toast } from "sonner";
+import { tasksService } from "@/services/tasks.service";
+import { usersService } from "@/services/users.service";
+import { TaskCard } from "@/components/tasks/TaskCard";
+import { EmptyState } from "@/components/common/EmptyState";
+import { TaskCardSkeleton } from "@/components/common/LoadingSkeleton";
+import { ConfirmDialog, useConfirmDialog } from "@/components/common/ConfirmDialog";
+import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
+import { useState } from "react";
+import type { Task } from "@/types";
+
+type Filter = "all" | "pending" | "completed";
+
+export default function TasksPage() {
+  const queryClient = useQueryClient();
+  const { state: confirmState, confirm, close: closeConfirm } = useConfirmDialog();
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => tasksService.getTasks({ limit: 100 }),
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => usersService.getUsers({ limit: 100 }),
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: tasksService.completeTask,
+    onMutate: async (taskId) => {
+      const prev = queryClient.getQueryData<Task[]>(["tasks"]);
+      queryClient.setQueryData<Task[]>(["tasks"], (old) =>
+        old?.map((t) => t.id === taskId ? { ...t, status: "completed" as const } : t)
+      );
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => {
+      queryClient.setQueryData(["tasks"], ctx?.prev);
+      toast.error("Failed to complete task");
+    },
+    onSuccess: () => toast.success("Task completed!"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: tasksService.deleteTask,
+    onSuccess: () => {
+      toast.success("Task deleted");
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+
+  const handleDelete = (id: number) => {
+    confirm("Delete task?", "This cannot be undone.", async () => {
+      setDeleteLoading(true);
+      await deleteMutation.mutateAsync(id);
+      setDeleteLoading(false);
+      closeConfirm();
+    });
+  };
+
+  const filtered = tasks.filter((t) => {
+    if (filter === "pending") return t.status === "pending";
+    if (filter === "completed") return t.status === "completed";
+    return true;
+  });
+
+  const filters: { label: string; value: Filter }[] = [
+    { label: "All", value: "all" },
+    { label: "Pending", value: "pending" },
+    { label: "Completed", value: "completed" },
+  ];
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header */}
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
+              {tasks.filter((t) => t.status === "pending").length} pending · {tasks.filter((t) => t.status === "completed").length} completed
+            </p>
+          </div>
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-sm font-medium transition"
+          >
+            <Plus className="w-4 h-4" /> New Task
+          </button>
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex items-center gap-1 mt-4 bg-muted p-1 rounded-xl w-fit">
+          {filters.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setFilter(f.value)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                filter === f.value
+                  ? "bg-background shadow-sm text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Task list */}
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array(5).fill(0).map((_, i) => <TaskCardSkeleton key={i} />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={CheckSquare}
+          title="No tasks found"
+          description={
+            filter === "all"
+              ? "Create your first task or upload a meeting transcript."
+              : `No ${filter} tasks.`
+          }
+          action={
+            filter === "all" ? (
+              <button
+                onClick={() => setCreateOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition"
+              >
+                <Plus className="w-4 h-4" /> Create Task
+              </button>
+            ) : undefined
+          }
+        />
+      ) : (
+        <AnimatePresence>
+          <div className="space-y-2">
+            {filtered.map((task, i) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                index={i}
+                onComplete={(id) => completeMutation.mutate(id)}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        </AnimatePresence>
+      )}
+
+      <CreateTaskModal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        users={users}
+      />
+
+      <ConfirmDialog {...confirmState} onCancel={closeConfirm} loading={deleteLoading} />
+    </div>
+  );
+}

@@ -1,56 +1,74 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.logger import get_logger
 from app.models.meeting import Meeting
 from app.models.user import User
 
 from app.schemas.meeting import (
-    MeetingCreate,
     MeetingUpdate
 )
+
+logger = get_logger(__name__)
+
+
 
 class MeetingService:
 
     @staticmethod
     def create_meeting(
         db: Session,
-        meeting_data: MeetingCreate,
+        title: str,
+        transcript: str,
         current_user: User
-):
+    ):
+        """
+        Create a new meeting.
+        Used by:
+        - Manual meeting creation
+        - Transcript upload
+        - Future audio transcription
+        """
+
         meeting = Meeting(
-            title=meeting_data.title,
-            transcript=meeting_data.transcript,
+            title=title,
+            transcript=transcript,
             uploaded_by=current_user.id
-    )
+        )
 
         db.add(meeting)
         db.commit()
         db.refresh(meeting)
 
+        logger.info("Meeting created: id=%s title=%r user_id=%s", meeting.id, meeting.title, current_user.id)
         return meeting
-    
+
     @staticmethod
     def get_meetings(
-        db: Session
+        db: Session,
+        current_user: User,
+        skip: int = 0,
+        limit: int = 20
     ):
-        return db.query(Meeting).all()
-    
+        return (
+            db.query(Meeting)
+            .filter(Meeting.uploaded_by == current_user.id)
+            .order_by(Meeting.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
     @staticmethod
     def get_meeting_by_id(
         db: Session,
         meeting_id: int
     ):
-        print("DEBUG MEETING ID:", meeting_id)
-
         meeting = (
             db.query(Meeting)
             .filter(Meeting.id == meeting_id)
             .first()
         )
-
-
-
-        print("DEBUG MEETING:", meeting)
 
         if not meeting:
             raise HTTPException(
@@ -59,32 +77,32 @@ class MeetingService:
             )
 
         return meeting
-    
+
     @staticmethod
     def update_meeting(
         db: Session,
         meeting_id: int,
         meeting_data: MeetingUpdate,
         current_user: User
-):
+    ):
         meeting = (
             db.query(Meeting)
             .filter(Meeting.id == meeting_id)
             .first()
-    )
+        )
 
         if not meeting:
             raise HTTPException(
                 status_code=404,
                 detail="Meeting not found"
-        )
+            )
 
-    # Only the creator can update
+        # Only creator can update
         if meeting.uploaded_by != current_user.id:
             raise HTTPException(
                 status_code=403,
                 detail="Only the meeting creator can update this meeting"
-        )
+            )
 
         if meeting_data.title is not None:
             meeting.title = meeting_data.title
@@ -95,36 +113,38 @@ class MeetingService:
         db.commit()
         db.refresh(meeting)
 
+        logger.info("Meeting updated: id=%s user_id=%s", meeting_id, current_user.id)
         return meeting
-    
+
     @staticmethod
     def delete_meeting(
         db: Session,
         meeting_id: int,
         current_user: User
-):
+    ):
         meeting = (
             db.query(Meeting)
             .filter(Meeting.id == meeting_id)
             .first()
-    )
+        )
 
         if not meeting:
             raise HTTPException(
                 status_code=404,
                 detail="Meeting not found"
-        )
+            )
 
-    # Only the creator can delete
+        # Only creator can delete
         if meeting.uploaded_by != current_user.id:
             raise HTTPException(
                 status_code=403,
                 detail="Only the meeting creator can delete this meeting"
-        )
+            )
 
         db.delete(meeting)
         db.commit()
 
+        logger.info("Meeting deleted: id=%s user_id=%s", meeting_id, current_user.id)
         return {
             "message": "Meeting deleted successfully"
-    }
+        }

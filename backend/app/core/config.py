@@ -22,4 +22,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-settings.AZURE_OPENAI_API_KEY

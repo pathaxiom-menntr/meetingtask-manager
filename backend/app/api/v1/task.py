@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.security import get_current_user
+from app.core.pagination import PaginationParams
 from app.db.database import get_db
 
 from app.models.user import User
@@ -42,10 +43,11 @@ def create_task(
     response_model=list[TaskResponse]
 )
 def get_tasks(
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return TaskService.get_tasks(db)
+    return TaskService.get_tasks(db, current_user, pagination.skip, pagination.limit)
 
 
 @router.get(
@@ -85,13 +87,11 @@ def complete_task(
 )
 def get_tasks_by_user(
     user_id: int,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return TaskService.get_tasks_by_user(
-        db,
-        user_id
-    )
+    return TaskService.get_tasks_by_user(db, user_id, pagination.skip, pagination.limit)
 
 
 @router.get(
@@ -100,13 +100,11 @@ def get_tasks_by_user(
 )
 def get_tasks_by_meeting(
     meeting_id: int,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return TaskService.get_tasks_by_meeting(
-        db,
-        meeting_id
-    )
+    return TaskService.get_tasks_by_meeting(db, meeting_id, pagination.skip, pagination.limit)
 
 
 @router.put(

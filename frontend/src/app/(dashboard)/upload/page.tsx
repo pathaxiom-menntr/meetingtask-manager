@@ -1,0 +1,288 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useDropzone } from "react-dropzone";
+import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import { meetingsService } from "@/services/meetings.service";
+import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
+import type { MeetingUploadResponse } from "@/types";
+
+type Stage = "idle" | "uploading" | "extracting" | "generating" | "done" | "error";
+
+const stages: { key: Stage; label: string }[] = [
+  { key: "uploading", label: "Uploading file..." },
+  { key: "extracting", label: "Extracting transcript..." },
+  { key: "generating", label: "Generating AI tasks..." },
+  { key: "done", label: "Tasks generated successfully!" },
+];
+
+export default function UploadPage() {
+  const queryClient = useQueryClient();
+  const [stage, setStage] = useState<Stage>("idle");
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState<MeetingUploadResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const onDrop = useCallback((accepted: File[]) => {
+    if (accepted.length > 0) {
+      setFile(accepted[0]);
+      setTitle(accepted[0].name.replace(/\.[^.]+$/, ""));
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      "text/plain": [".txt"],
+      "application/pdf": [".pdf"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+      "text/markdown": [".md"],
+    },
+    maxFiles: 1,
+    disabled: stage !== "idle",
+  });
+
+  const handleUpload = async () => {
+    if (!file || !title.trim()) {
+      toast.error("Please add a title and select a file");
+      return;
+    }
+
+    setError(null);
+    setStage("uploading");
+    setProgress(0);
+
+    try {
+      // Simulate stages with actual upload
+      setTimeout(() => setStage("extracting"), 800);
+      setTimeout(() => setStage("generating"), 2000);
+
+      const data = await meetingsService.uploadTranscript(title, file, setProgress);
+      setResult(data);
+      setStage("done");
+      queryClient.invalidateQueries({ queryKey: ["meetings", "tasks", "dashboard"] });
+      toast.success(`${data.tasks.length} tasks generated!`);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        "Upload failed";
+      setError(msg);
+      setStage("error");
+      toast.error(msg);
+    }
+  };
+
+  const reset = () => {
+    setStage("idle");
+    setFile(null);
+    setTitle("");
+    setProgress(0);
+    setResult(null);
+    setError(null);
+  };
+
+  const currentStageIndex = stages.findIndex((s) => s.key === stage);
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
+        <h1 className="text-2xl font-bold tracking-tight">AI Upload</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Upload a meeting transcript and let AI extract all action items automatically.
+        </p>
+      </motion.div>
+
+      {stage === "idle" || stage === "error" ? (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+          {/* Title */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Meeting Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Q2 Planning Meeting"
+              className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
+
+          {/* Dropzone */}
+          <div
+            {...getRootProps()}
+            className={cn(
+              "relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all",
+              isDragActive
+                ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-950/20"
+                : "border-muted hover:border-indigo-300 hover:bg-muted/30"
+            )}
+          >
+            <input {...getInputProps()} />
+            <motion.div
+              animate={{ scale: isDragActive ? 1.05 : 1 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col items-center gap-3"
+            >
+              <div className={cn(
+                "w-14 h-14 rounded-2xl flex items-center justify-center",
+                isDragActive ? "bg-indigo-100 dark:bg-indigo-900" : "bg-muted"
+              )}>
+                <Upload className={cn("w-7 h-7", isDragActive ? "text-indigo-500" : "text-muted-foreground")} />
+              </div>
+              {file ? (
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-500" />
+                  <span className="text-sm font-medium">{file.name}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                    className="p-0.5 hover:bg-muted rounded"
+                  >
+                    <X className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm font-medium">
+                    {isDragActive ? "Drop it here!" : "Drag & drop or click to upload"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Supports PDF, DOCX, TXT, MD</p>
+                </>
+              )}
+            </motion.div>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/20 rounded-xl text-red-600 text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleUpload}
+            disabled={!file || !title.trim()}
+            className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-medium text-sm transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Sparkles className="w-4 h-4" /> Generate Tasks with AI
+          </button>
+        </motion.div>
+      ) : stage === "done" && result ? (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+          {/* Success header */}
+          <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl">
+            <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                {result.tasks.length} tasks generated!
+              </p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">
+                {result.skipped.length > 0 && `${result.skipped.length} tasks skipped (users not found).`}
+              </p>
+            </div>
+          </div>
+
+          {/* Meeting info */}
+          <div className="bg-card border rounded-2xl p-4">
+            <p className="text-sm font-medium">{result.meeting.title}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Meeting ID #{result.meeting.id}
+            </p>
+          </div>
+
+          {/* Generated tasks */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold">Generated Tasks</h3>
+            {result.tasks.map((task, i) => (
+              <motion.div
+                key={task.id}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.07 }}
+                className="flex items-start gap-3 p-3 bg-card border rounded-xl"
+              >
+                <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium">{task.title}</p>
+                  {task.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Skipped tasks */}
+          {result.skipped.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground">Skipped</h3>
+              {result.skipped.map((s, i) => (
+                <div key={i} className="flex items-start gap-2 p-3 bg-muted rounded-xl">
+                  <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm">{s.title ?? "Untitled"}</p>
+                    <p className="text-xs text-muted-foreground">{s.reason}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button
+            onClick={reset}
+            className="w-full py-2.5 border rounded-xl text-sm font-medium hover:bg-accent transition"
+          >
+            Upload Another
+          </button>
+        </motion.div>
+      ) : (
+        /* Processing stages */
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+          <div className="bg-card border rounded-2xl p-8 space-y-6">
+            <div className="flex flex-col items-center text-center gap-2">
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950 rounded-2xl flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+              </div>
+              <p className="text-sm font-medium">Processing your transcript...</p>
+            </div>
+
+            {/* Stage steps */}
+            <div className="space-y-3">
+              {stages.slice(0, 3).map((s, i) => {
+                const isDone = currentStageIndex > i;
+                const isCurrent = currentStageIndex === i;
+                return (
+                  <div key={s.key} className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all",
+                      isDone ? "bg-emerald-500" : isCurrent ? "bg-indigo-500" : "bg-muted"
+                    )}>
+                      {isDone ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                      ) : isCurrent ? (
+                        <Loader2 className="w-3 h-3 text-white animate-spin" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{i + 1}</span>
+                      )}
+                    </div>
+                    <span className={cn(
+                      "text-sm transition-colors",
+                      isDone ? "text-emerald-600 dark:text-emerald-400" :
+                      isCurrent ? "text-foreground font-medium" :
+                      "text-muted-foreground"
+                    )}>
+                      {s.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}

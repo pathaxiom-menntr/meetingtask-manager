@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.logger import get_logger
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.schemas.auth import LoginRequest, RefreshRequest
@@ -13,6 +14,7 @@ from app.core.security import (
     decode_refresh_token,
 )
 
+logger = get_logger(__name__)
 
 class AuthService:
 
@@ -28,6 +30,7 @@ class AuthService:
         )
 
         if existing_user:
+            logger.warning("Register failed — email already exists: %s", user_data.email)
             raise HTTPException(
                 status_code=400,
                 detail="Email already exists"
@@ -43,6 +46,7 @@ class AuthService:
         db.commit()
         db.refresh(user)
 
+        logger.info("User registered: id=%s email=%s", user.id, user.email)
         return user
 
     @staticmethod
@@ -57,6 +61,7 @@ class AuthService:
         )
 
         if not user:
+            logger.warning("Login failed — user not found: %s", login_data.email)
             raise HTTPException(
                 status_code=401,
                 detail="Invalid email or password"
@@ -66,23 +71,16 @@ class AuthService:
             login_data.password,
             user.password_hash
         ):
+            logger.warning("Login failed — wrong password: %s", login_data.email)
             raise HTTPException(
                 status_code=401,
                 detail="Invalid email or password"
             )
 
-        access_token = create_access_token(
-            data={
-                "sub": str(user.id)
-            }
-        )
+        access_token = create_access_token(data={"sub": str(user.id)})
+        refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
-        refresh_token = create_refresh_token(
-            data={
-                "sub": str(user.id)
-            }
-        )
-
+        logger.info("User logged in: id=%s email=%s", user.id, user.email)
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
