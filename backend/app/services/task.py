@@ -8,6 +8,7 @@ from app.models.meeting import Meeting
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.task import TaskCreate, TaskUpdate
+from app.services.notification import NotificationService
 
 logger = get_logger(__name__)
 
@@ -46,18 +47,46 @@ class TaskService:
                     detail="Meeting not found"
                 )
 
+        from datetime import date as date_type
+        due = None
+        if task_data.due_date:
+            try:
+                due = date_type.fromisoformat(task_data.due_date)
+            except ValueError:
+                pass
+
         task = Task(
             title=task_data.title,
             description=task_data.description,
             status="pending",
+            priority=task_data.priority or "medium",
             assignee_id=task_data.assignee_id,
             assigned_by=current_user.id,
-            meeting_id=task_data.meeting_id
+            meeting_id=task_data.meeting_id,
+            due_date=due
         )
 
         db.add(task)
         db.commit()
         db.refresh(task)
+
+        # Always notify the assignee
+        assigner_name = current_user.full_name or "Someone"
+        if task.assignee_id == current_user.id:
+            notif_title = "You assigned a task to yourself"
+            notif_msg = f"You created: \"{task.title}\""
+        else:
+            notif_title = "New task assigned to you"
+            notif_msg = f"{assigner_name} assigned you: \"{task.title}\""
+
+        NotificationService.create(
+            db,
+            user_id=task.assignee_id,
+            title=notif_title,
+            message=notif_msg,
+            type="task_assigned",
+            task_id=task.id
+        )
 
         logger.info(
             "Task created: id=%s title=%r assignee_id=%s assigned_by=%s meeting_id=%s",
@@ -74,7 +103,10 @@ class TaskService:
     ):
         return (
             db.query(Task)
-            .filter(Task.assignee_id == current_user.id)
+            .filter(
+                (Task.assignee_id == current_user.id)
+                | (Task.assigned_by == current_user.id)
+            )
             .offset(skip)
             .limit(limit)
             .all()
@@ -175,7 +207,7 @@ class TaskService:
         if task.assignee_id != current_user.id:
             raise HTTPException(
                 status_code=403,
-                detail="You can only complete your own tasks"
+                detail="Only the assignee can mark this task as complete"
             )
 
         # Prevent re-completing an already completed task
@@ -243,6 +275,16 @@ class TaskService:
                 )
 
             task.assignee_id = task_data.assignee_id
+
+        if task_data.priority is not None:
+            task.priority = task_data.priority
+
+        if task_data.due_date is not None:
+            from datetime import date as date_type
+            try:
+                task.due_date = date_type.fromisoformat(task_data.due_date)
+            except ValueError:
+                pass
 
         db.commit()
         db.refresh(task)
@@ -365,13 +407,28 @@ class TaskService:
                 )
                 continue
             
+            from datetime import date as date_type
+            priority = ai_task.get("priority", "medium") or "medium"
+            if priority not in ("low", "medium", "high", "critical"):
+                priority = "medium"
+
+            due_date_raw = ai_task.get("due_date")
+            due_date = None
+            if due_date_raw:
+                try:
+                    due_date = date_type.fromisoformat(due_date_raw)
+                except (ValueError, TypeError):
+                    pass
+
             task = Task(
                 title=title,
                 description=description,
                 status="pending",
+                priority=priority,
                 assignee_id=assignee.id,
                 assigned_by=current_user.id,
-                meeting_id=meeting_id
+                meeting_id=meeting_id,
+                due_date=due_date
             )
     
             db.add(task)
@@ -393,6 +450,22 @@ class TaskService:
                 "AI task skipped — reason=%r title=%r assignee=%r",
                 s["reason"], s["title"], s["assignee_name"]
             )
+
+        # Send one notification per unique assignee (skip self-assignments)
+        assigner_name = current_user.full_name or "Someone"
+        notified_users: set[int] = set()
+        for task in created_tasks:
+            if task.assignee_id != current_user.id and task.assignee_id not in notified_users:
+                task_count = sum(1 for t in created_tasks if t.assignee_id == task.assignee_id)
+                NotificationService.create(
+                    db,
+                    user_id=task.assignee_id,
+                    title=f"{task_count} task{'s' if task_count > 1 else ''} assigned to you",
+                    message=f"{assigner_name} assigned you {task_count} task{'s' if task_count > 1 else ''} from a meeting.",
+                    type="task_assigned",
+                    task_id=task.id
+                )
+                notified_users.add(task.assignee_id)
     
         return {
             "created": created_tasks,

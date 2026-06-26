@@ -19,12 +19,12 @@ export function MeetingCard({ meeting, taskCount = 0, onDelete, index = 0 }: Mee
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.06 }}
-      className="group bg-card border rounded-2xl p-5 hover:shadow-md transition-all"
+      className="group bg-card border rounded-2xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950 rounded-xl flex items-center justify-center shrink-0">
-            <FileText className="w-5 h-5 text-indigo-500" />
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40">
+            <FileText className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold text-sm truncate">{meeting.title}</h3>

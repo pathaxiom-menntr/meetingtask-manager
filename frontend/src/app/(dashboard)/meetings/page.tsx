@@ -60,7 +60,7 @@ export default function MeetingsPage() {
         </div>
         <Link
           href="/upload"
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-sm font-medium transition"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white rounded-xl text-sm font-medium transition shadow-sm shadow-indigo-200 dark:shadow-none"
         >
           <Plus className="w-4 h-4" /> Upload Transcript
         </Link>

@@ -23,6 +23,7 @@ export interface AuthTokens {
   token_type: string;
 }
 
+export type TaskPriority = "low" | "medium" | "high" | "critical";
 export type TaskStatus = "pending" | "completed";
 
 export interface Task {
@@ -30,9 +31,11 @@ export interface Task {
   title: string;
   description: string | null;
   status: TaskStatus;
+  priority: TaskPriority;
   assignee_id: number;
   assigned_by: number;
   meeting_id: number | null;
+  due_date: string | null;
   created_at: string;
   completed_at: string | null;
 }
@@ -42,12 +45,16 @@ export interface TaskCreate {
   description?: string;
   assignee_id: number;
   meeting_id?: number;
+  priority?: string;
+  due_date?: string;
 }
 
 export interface TaskUpdate {
   title?: string;
   description?: string;
   assignee_id?: number;
+  priority?: string;
+  due_date?: string;
 }
 
 export interface Meeting {

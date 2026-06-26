@@ -8,6 +8,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.meeting import router as meeting_router
 from app.api.v1.task import router as task_router
 from app.api.v1.dashboard import router as dashboard_router
+from app.api.v1.notification import router as notification_router
 
 app = FastAPI(
     title="Meeting Task Manager API"
@@ -32,6 +33,7 @@ app.include_router(auth_router)
 app.include_router(meeting_router)
 app.include_router(task_router)
 app.include_router(dashboard_router)
+app.include_router(notification_router)
 
 
 @app.get("/")

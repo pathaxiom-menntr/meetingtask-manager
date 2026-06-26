@@ -10,10 +10,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { tasksService } from "@/services/tasks.service";
 import type { User } from "@/types";
 
+const PRIORITIES = [
+  { value: "low", label: "🔽 Low" },
+  { value: "medium", label: "🔼 Medium" },
+  { value: "high", label: "⚠️ High" },
+  { value: "critical", label: "🔥 Critical" },
+];
+
 const schema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   assignee_id: z.string().min(1, "Assignee is required"),
+  priority: z.enum(["low", "medium", "high", "critical"]),
+  due_date: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -32,7 +41,7 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({ resolver: zodResolver(schema), defaultValues: { priority: "medium" } });
 
   const mutation = useMutation({
     mutationFn: (data: FormData) =>
@@ -40,6 +49,8 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
         title: data.title,
         description: data.description,
         assignee_id: Number(data.assignee_id),
+        priority: data.priority,
+        due_date: data.due_date || undefined,
       }),
     onSuccess: () => {
       toast.success("Task created!");
@@ -64,7 +75,7 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={handleClose}
           />
 
@@ -77,7 +88,10 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
             className="relative bg-background rounded-2xl border shadow-xl p-6 w-full max-w-md mx-4"
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold">Create Task</h2>
+              <div>
+                <h2 className="text-base font-semibold">Create Task</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">Add a new task to your board</p>
+              </div>
               <button
                 onClick={handleClose}
                 className="p-1.5 hover:bg-accent rounded-lg transition"
@@ -87,6 +101,7 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
             </div>
 
             <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+              {/* Title */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Title</label>
                 <input
@@ -97,8 +112,11 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
                 {errors.title && <p className="text-xs text-red-500">{errors.title.message}</p>}
               </div>
 
+              {/* Description */}
               <div className="space-y-1.5">
-                <label className="text-sm font-medium">Description <span className="text-muted-foreground">(optional)</span></label>
+                <label className="text-sm font-medium">
+                  Description <span className="text-muted-foreground">(optional)</span>
+                </label>
                 <textarea
                   {...register("description")}
                   rows={3}
@@ -107,6 +125,7 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
                 />
               </div>
 
+              {/* Assignee */}
               <div className="space-y-1.5">
                 <label className="text-sm font-medium">Assign To</label>
                 <select
@@ -120,9 +139,40 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
                     </option>
                   ))}
                 </select>
-                {errors.assignee_id && <p className="text-xs text-red-500">{errors.assignee_id.message}</p>}
+                {errors.assignee_id && (
+                  <p className="text-xs text-red-500">{errors.assignee_id.message}</p>
+                )}
               </div>
 
+              {/* Priority + Due Date side-by-side */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Priority</label>
+                  <select
+                    {...register("priority")}
+                    className="w-full px-3 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                  >
+                    {PRIORITIES.map((p) => (
+                      <option key={p.value} value={p.value}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">
+                    Due Date <span className="text-muted-foreground">(optional)</span>
+                  </label>
+                  <input
+                    {...register("due_date")}
+                    type="date"
+                    className="w-full px-3 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                  />
+                </div>
+              </div>
+
+              {/* Actions */}
               <div className="flex gap-2 pt-1">
                 <button
                   type="button"
@@ -134,7 +184,7 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
                 <button
                   type="submit"
                   disabled={mutation.isPending}
-                  className="flex-1 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="flex-1 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-60 shadow-sm shadow-indigo-200 dark:shadow-none"
                 >
                   {mutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                   {mutation.isPending ? "Creating..." : "Create Task"}

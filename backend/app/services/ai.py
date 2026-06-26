@@ -26,7 +26,9 @@ The JSON must follow this exact format:
     {
       "title": "Task title",
       "description": "Task description",
-      "assignee": "Person name"
+      "assignee": "Person name",
+      "priority": "medium",
+      "due_date": "2025-07-15"
     }
   ]
 }
@@ -40,7 +42,9 @@ Rules:
 5. If no assignee is mentioned, use null.
 6. Keep task titles short and clear.
 7. Description should contain enough detail for the assignee.
-8. If no tasks are present, return:
+8. priority must be one of: "low", "medium", "high", "critical". Infer from urgency cues in the transcript. Default to "medium".
+9. due_date must be an ISO date string (YYYY-MM-DD) if a deadline is mentioned, otherwise null.
+10. If no tasks are present, return:
 
 {
   "tasks": []

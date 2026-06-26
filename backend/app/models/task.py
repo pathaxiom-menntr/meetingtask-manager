@@ -4,7 +4,8 @@ from sqlalchemy import (
     String,
     Text,
     TIMESTAMP,
-    ForeignKey
+    ForeignKey,
+    Date
 )
 from sqlalchemy.sql import func
 
@@ -44,6 +45,17 @@ class Task(Base):
     meeting_id = Column(
         Integer,
         ForeignKey("meetings.id"),
+        nullable=True
+    )
+
+    priority = Column(
+        String(20),
+        nullable=False,
+        default="medium"
+    )
+
+    due_date = Column(
+        Date,
         nullable=True
     )
 

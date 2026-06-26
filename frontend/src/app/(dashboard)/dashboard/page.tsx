@@ -6,6 +6,7 @@ import { CheckSquare, Clock, CheckCircle2, Video, Plus, TrendingUp } from "lucid
 import { toast } from "sonner";
 import { dashboardService } from "@/services/dashboard.service";
 import { tasksService } from "@/services/tasks.service";
+import { usersService } from "@/services/users.service";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -30,6 +31,11 @@ export default function DashboardPage() {
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["tasks"],
     queryFn: () => tasksService.getTasks({ limit: 50 }),
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => usersService.getUsers({ limit: 100 }),
   });
 
   const completeMutation = useMutation({
@@ -102,7 +108,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/upload"
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl text-sm font-medium transition"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white rounded-xl text-sm font-medium transition shadow-sm shadow-indigo-200 dark:shadow-none"
         >
           <Plus className="w-4 h-4" /> New Upload
         </Link>
@@ -170,6 +176,7 @@ export default function DashboardPage() {
                   <TaskCard
                     key={task.id}
                     task={task}
+                    users={users}
                     index={i}
                     onComplete={(id) => completeMutation.mutate(id)}
                     onDelete={handleDelete}
@@ -202,7 +209,7 @@ export default function DashboardPage() {
             ) : (
               <AnimatePresence>
                 {completedTasks.slice(0, 6).map((task, i) => (
-                  <TaskCard key={task.id} task={task} index={i} onDelete={handleDelete} />
+                  <TaskCard key={task.id} task={task} users={users} index={i} onDelete={handleDelete} />
                 ))}
               </AnimatePresence>
             )}

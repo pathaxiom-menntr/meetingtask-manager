@@ -42,7 +42,7 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-4 h-14 border-b shrink-0">
-        <div className="w-7 h-7 bg-indigo-500 rounded-lg flex items-center justify-center shrink-0">
+        <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shrink-0 shadow-sm shadow-indigo-300 dark:shadow-indigo-900/40">
           <Zap className="w-4 h-4 text-white" />
         </div>
         {!collapsed && (
@@ -67,11 +67,11 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all",
                 active
-                  ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400"
+                  ? "bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-600 dark:from-indigo-950/70 dark:to-violet-950/60 dark:text-indigo-400"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
-              <Icon className={cn("w-4 h-4 shrink-0", active && "text-indigo-500")} />
+              <Icon className={cn("w-4 h-4 shrink-0", active && "text-indigo-500 drop-shadow-sm")} />
               {!collapsed && <span>{label}</span>}
             </Link>
           );
@@ -89,7 +89,7 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all",
                 active
-                  ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400"
+                  ? "bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-600 dark:from-indigo-950/70 dark:to-violet-950/60 dark:text-indigo-400"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
