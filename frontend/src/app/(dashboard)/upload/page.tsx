@@ -3,7 +3,8 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Sparkles } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { meetingsService } from "@/services/meetings.service";
 import { useQueryClient } from "@tanstack/react-query";
@@ -173,80 +174,85 @@ export default function UploadPage() {
       ) : stage === "done" && result ? (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           {/* Success header */}
-          <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl">
-            <CheckCircle2 className="w-6 h-6 text-emerald-500 shrink-0" />
+          <div
+            className="flex items-center gap-3 p-4 rounded-2xl border"
+            style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(5,150,105,0.04))" }}
+          >
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+            </div>
             <div>
               <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                {result.tasks.length} tasks generated!
+                Meeting saved!
               </p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-0.5">
-                {result.skipped.length > 0 && `${result.skipped.length} tasks skipped (users not found).`}
+              <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 mt-0.5">
+                AI is extracting tasks in the background — check Tasks in a moment.
               </p>
             </div>
           </div>
 
           {/* Meeting info */}
-          <div className="bg-card border rounded-2xl p-4">
-            <p className="text-sm font-medium">{result.meeting.title}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Meeting ID #{result.meeting.id}
-            </p>
-          </div>
-
-          {/* Generated tasks */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-semibold">Generated Tasks</h3>
-            {result.tasks.map((task, i) => (
-              <motion.div
-                key={task.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.07 }}
-                className="flex items-start gap-3 p-3 bg-card border rounded-xl"
-              >
-                <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium">{task.title}</p>
-                  {task.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>
-                  )}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Skipped tasks */}
-          {result.skipped.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-muted-foreground">Skipped</h3>
-              {result.skipped.map((s, i) => (
-                <div key={i} className="flex items-start gap-2 p-3 bg-muted rounded-xl">
-                  <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm">{s.title ?? "Untitled"}</p>
-                    <p className="text-xs text-muted-foreground">{s.reason}</p>
-                  </div>
-                </div>
-              ))}
+          <div className="bg-card border rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{result.meeting.title}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Meeting ID #{result.meeting.id}</p>
             </div>
-          )}
+            <Link
+              href="/tasks"
+              className="flex items-center gap-1.5 text-xs font-medium text-indigo-500 hover:text-indigo-600 transition"
+            >
+              View Tasks <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
 
-          <button
-            onClick={reset}
-            className="w-full py-2.5 border rounded-xl text-sm font-medium hover:bg-accent transition"
-          >
-            Upload Another
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={reset}
+              className="flex-1 py-2.5 border rounded-xl text-sm font-medium hover:bg-accent transition"
+            >
+              Upload Another
+            </button>
+            <Link
+              href="/tasks"
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium text-white flex items-center justify-center gap-2 transition"
+              style={{ background: "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)" }}
+            >
+              Go to Tasks <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </motion.div>
       ) : (
         /* Processing stages */
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-          <div className="bg-card border rounded-2xl p-8 space-y-6">
-            <div className="flex flex-col items-center text-center gap-2">
-              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+          <div className="bg-card border rounded-2xl p-8 space-y-7 relative overflow-hidden">
+
+            {/* Subtle background radial glow */}
+            <div
+              className="pointer-events-none absolute inset-0 rounded-2xl"
+              style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.07), transparent 70%)" }}
+            />
+
+            {/* Spinner */}
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="relative">
+                <div
+                  className="absolute inset-0 rounded-2xl blur-xl opacity-50"
+                  style={{ background: "linear-gradient(135deg, #6366f1, #7c3aed)" }}
+                />
+                <div
+                  className="relative w-14 h-14 rounded-2xl flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
+                  }}
+                >
+                  <Loader2 className="w-7 h-7 text-white animate-spin" />
+                </div>
               </div>
-              <p className="text-sm font-medium">Processing your transcript...</p>
+              <div>
+                <p className="text-sm font-semibold">Processing your transcript...</p>
+                <p className="text-xs text-muted-foreground mt-0.5">AI is reading and extracting action items</p>
+              </div>
             </div>
 
             {/* Stage steps */}
@@ -257,28 +263,56 @@ export default function UploadPage() {
                 return (
                   <div key={s.key} className="flex items-center gap-3">
                     <div className={cn(
-                      "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all",
-                      isDone ? "bg-emerald-500" : isCurrent ? "bg-indigo-500" : "bg-muted"
-                    )}>
+                      "w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all duration-300",
+                      isDone
+                        ? "bg-emerald-500"
+                        : isCurrent
+                        ? "ring-2 ring-indigo-300 ring-offset-1"
+                        : "bg-muted"
+                    )}
+                    style={isCurrent ? { background: "linear-gradient(135deg, #6366f1, #7c3aed)" } : undefined}
+                    >
                       {isDone ? (
                         <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                       ) : isCurrent ? (
                         <Loader2 className="w-3 h-3 text-white animate-spin" />
                       ) : (
-                        <span className="text-xs text-muted-foreground">{i + 1}</span>
+                        <span className="text-[10px] text-muted-foreground font-medium">{i + 1}</span>
                       )}
                     </div>
                     <span className={cn(
                       "text-sm transition-colors",
                       isDone ? "text-emerald-600 dark:text-emerald-400" :
-                      isCurrent ? "text-foreground font-medium" :
+                      isCurrent ? "text-foreground font-semibold" :
                       "text-muted-foreground"
                     )}>
                       {s.label}
                     </span>
+                    {isCurrent && (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: [0.4, 1, 0.4] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(99,102,241,0.1)", color: "#6366f1" }}
+                      >
+                        in progress
+                      </motion.span>
+                    )}
                   </div>
                 );
               })}
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-1 bg-muted rounded-full overflow-hidden">
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: "linear-gradient(90deg, #6366f1, #7c3aed, #06b6d4)" }}
+                initial={{ width: "5%" }}
+                animate={{ width: `${Math.max(10, ((currentStageIndex + 1) / 3) * 100)}%` }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              />
             </div>
           </div>
         </motion.div>

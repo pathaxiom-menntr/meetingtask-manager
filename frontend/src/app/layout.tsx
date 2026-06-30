@@ -6,7 +6,7 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Meeting Task Manager — Meeting Task Manager",
+  title: "MeetingTask — AI-powered meeting intelligence",
   description: "AI-powered meeting task management. Upload transcripts, extract action items, and stay on top of your team's work.",
 };
 

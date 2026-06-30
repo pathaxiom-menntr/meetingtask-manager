@@ -1,4 +1,3 @@
-import { Zap } from "lucide-react";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +9,19 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         backgroundSize: "24px 24px",
       }}
     >
+      {/* Top accent bar */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[3px] z-10"
+        style={{ background: "linear-gradient(90deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%)" }}
+      />
+
+      {/* Bottom-left line decoration */}
+      <div className="pointer-events-none absolute bottom-14 left-10 opacity-50 space-y-2">
+        <div className="w-8 h-px rounded-full" style={{ background: "linear-gradient(90deg, #a5b4fc, transparent)" }} />
+        <div className="w-14 h-px rounded-full" style={{ background: "linear-gradient(90deg, #c7d2fe, transparent)" }} />
+        <div className="w-5 h-px rounded-full" style={{ background: "linear-gradient(90deg, #a5b4fc, transparent)" }} />
+      </div>
+
       {/* Soft glow blobs */}
       <div
         className="pointer-events-none absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full opacity-30"
@@ -22,13 +34,38 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       {/* Top nav */}
       <header className="relative w-full flex items-center justify-between px-8 py-5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-            <Zap className="w-3.5 h-3.5 text-white" />
+        <div className="flex items-center gap-3">
+          {/* Logo mark */}
+          <div className="relative shrink-0">
+            <div
+              className="absolute inset-0 rounded-xl blur-md opacity-50"
+              style={{ background: "linear-gradient(135deg, #818cf8, #7c3aed)" }}
+            />
+            <div
+              className="relative w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{
+                background: "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 10px rgba(99,102,241,0.35)",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M2 13V3L8 9L14 3V13"
+                  stroke="white"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
           </div>
-          <span className="font-semibold text-sm tracking-tight text-gray-800">MeetingTask</span>
+          {/* Brand name */}
+          <div className="flex flex-col leading-none">
+            <span className="font-semibold text-sm tracking-tight text-gray-800">MeetingTask</span>
+            <span className="text-[10px] text-indigo-400 tracking-widest uppercase mt-0.5 font-medium">AI</span>
+          </div>
         </div>
-        <span className="text-xs text-gray-400 hidden sm:block">AI-powered meeting intelligence</span>
+        <span className="text-xs text-gray-400 hidden sm:block tracking-wide">AI-powered intelligence</span>
       </header>
 
       {/* Center content */}
@@ -36,7 +73,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="w-full max-w-sm">
 
           {/* Accent line above card */}
-          <div className="w-10 h-0.5 bg-indigo-500 rounded-full mx-auto mb-6" />
+          <div
+            className="w-10 h-0.5 rounded-full mx-auto mb-6"
+            style={{ background: "linear-gradient(90deg, #6366f1, #8b5cf6)" }}
+          />
 
           {/* Form card */}
           <div

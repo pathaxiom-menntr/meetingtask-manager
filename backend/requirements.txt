@@ -12,6 +12,7 @@ python-dotenv==1.1.1
 python-multipart==0.0.20
 
 passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 python-jose[cryptography]==3.5.0
 
 alembic==1.16.4
@@ -24,3 +25,10 @@ openai==1.91.0
 # File parsing (transcript upload)
 PyPDF2==3.0.1
 python-docx==1.1.2
+
+# Rate limiting
+slowapi==0.1.9
+
+# Testing
+pytest==8.3.5
+httpx==0.28.1

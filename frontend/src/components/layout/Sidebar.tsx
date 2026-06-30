@@ -12,7 +12,6 @@ import {
   Users,
   User,
   Settings,
-  Zap,
 } from "lucide-react";
 import { useSidebarStore } from "@/store/sidebar.store";
 
@@ -46,12 +45,32 @@ export function Sidebar() {
         >
           {/* Logo */}
           <div className="flex items-center gap-3 px-5 h-16 border-b shrink-0">
-            <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0">
-              <Zap className="w-4 h-4 text-white" />
+            <div className="relative shrink-0">
+              <div
+                className="absolute inset-0 rounded-xl blur-md opacity-50"
+                style={{ background: "linear-gradient(135deg, #818cf8, #7c3aed)" }}
+              />
+              <div
+                className="relative w-8 h-8 rounded-xl flex items-center justify-center"
+                style={{
+                  background: "linear-gradient(135deg, #6366f1 0%, #7c3aed 100%)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 10px rgba(99,102,241,0.35)",
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path
+                    d="M2 13V3L8 9L14 3V13"
+                    stroke="white"
+                    strokeWidth="1.9"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
             </div>
-            <div className="flex flex-col leading-tight">
+            <div className="flex flex-col leading-none">
               <span className="font-bold text-sm tracking-tight text-foreground">MeetingTask</span>
-              <span className="text-[10px] text-muted-foreground font-medium tracking-wide uppercase">Manager</span>
+              <span className="text-[10px] text-indigo-400 font-medium tracking-widest uppercase mt-0.5">AI</span>
             </div>
           </div>
 
