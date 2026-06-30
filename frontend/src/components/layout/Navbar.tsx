@@ -12,25 +12,35 @@ import {
   CheckCheck,
   ClipboardList,
   X,
+  Menu,
+  CheckSquare,
+  Video,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { notificationsService } from "@/services/notifications.service";
 import type { Notification } from "@/services/notifications.service";
+import { tasksService } from "@/services/tasks.service";
+import { meetingsService } from "@/services/meetings.service";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSidebarStore } from "@/store/sidebar.store";
 
 export function Navbar() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toggleSidebar = useSidebarStore((s) => s.toggle);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -41,17 +51,58 @@ export function Navbar() {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
         setNotifOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setSearchQuery("");
+      }
     }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, []);
 
   // Fetch notifications
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
     queryFn: notificationsService.getAll,
-    refetchInterval: 30000, // poll every 30s
+    refetchInterval: 30000,
   });
+
+  // Fetch all tasks + meetings for search
+  const { data: allTasks = [] } = useQuery({
+    queryKey: ["tasks"],
+    queryFn: () => tasksService.getTasks({ limit: 200 }),
+  });
+  const { data: allMeetings = [] } = useQuery({
+    queryKey: ["meetings"],
+    queryFn: () => meetingsService.getMeetings({ limit: 200 }),
+  });
+
+  // Filter results
+  const q = searchQuery.trim().toLowerCase();
+  const matchedTasks = q
+    ? allTasks.filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          (t.description ?? "").toLowerCase().includes(q)
+      ).slice(0, 5)
+    : [];
+  const matchedMeetings = q
+    ? allMeetings.filter(
+        (m) =>
+          m.title.toLowerCase().includes(q) ||
+          m.transcript.toLowerCase().includes(q)
+      ).slice(0, 5)
+    : [];
+  const hasResults = matchedTasks.length > 0 || matchedMeetings.length > 0;
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -80,15 +131,102 @@ export function Navbar() {
   };
 
   return (
-    <header className="h-14 border-b flex items-center justify-between px-6 bg-background shrink-0">
+    <header className="h-16 border-b flex items-center gap-3 px-4 bg-background shrink-0">
+      {/* Hamburger toggle */}
+      <button
+        onClick={toggleSidebar}
+        className="w-9 h-9 rounded-xl hover:bg-accent flex items-center justify-center transition shrink-0"
+        aria-label="Toggle sidebar"
+      >
+        <Menu className="w-4 h-4 text-muted-foreground" />
+      </button>
+
       {/* Search */}
-      <div className="relative hidden sm:block">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <div className="relative hidden sm:block" ref={searchRef}>
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <input
           type="text"
+          value={searchQuery}
+          onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+          onFocus={() => setSearchOpen(true)}
           placeholder="Search tasks, meetings..."
-          className="pl-9 pr-4 py-2 text-sm rounded-xl bg-muted border-0 w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+          className="pl-9 pr-8 py-2 text-sm rounded-xl bg-muted border-0 w-72 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
         />
+        {searchQuery && (
+          <button
+            onClick={() => { setSearchQuery(""); setSearchOpen(false); }}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* Results dropdown */}
+        <AnimatePresence>
+          {searchOpen && q && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-full mt-2 left-0 w-96 bg-popover border rounded-2xl shadow-xl z-50 overflow-hidden"
+            >
+              {!hasResults ? (
+                <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                  No results for &ldquo;{searchQuery}&rdquo;
+                </div>
+              ) : (
+                <div className="py-2">
+                  {/* Tasks */}
+                  {matchedTasks.length > 0 && (
+                    <div>
+                      <p className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Tasks</p>
+                      {matchedTasks.map((t) => (
+                        <button
+                          key={t.id}
+                          onClick={() => { router.push(`/tasks/${t.id}`); setSearchOpen(false); setSearchQuery(""); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-accent transition text-left"
+                        >
+                          <CheckSquare className="w-4 h-4 text-indigo-500 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{t.title}</p>
+                            {t.description && <p className="text-xs text-muted-foreground truncate">{t.description}</p>}
+                          </div>
+                          <span className={cn(
+                            "ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0",
+                            t.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                          )}>
+                            {t.status === "completed" ? "Done" : "Pending"}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Meetings */}
+                  {matchedMeetings.length > 0 && (
+                    <div className={matchedTasks.length > 0 ? "border-t mt-1 pt-1" : ""}>
+                      <p className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Meetings</p>
+                      {matchedMeetings.map((m) => (
+                        <button
+                          key={m.id}
+                          onClick={() => { router.push(`/meetings`); setSearchOpen(false); setSearchQuery(""); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-accent transition text-left"
+                        >
+                          <Video className="w-4 h-4 text-violet-500 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{m.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">{m.transcript.slice(0, 60)}...</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="flex items-center gap-3 ml-auto">
@@ -214,7 +352,7 @@ export function Navbar() {
             onClick={() => setMenuOpen(!menuOpen)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl hover:bg-accent transition"
           >
-            <div className="w-7 h-7 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-full flex items-center justify-center text-white text-xs font-semibold shadow-sm shadow-indigo-200 dark:shadow-indigo-900/30">
+            <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
               {user ? getInitials(user.full_name) : "U"}
             </div>
             <span className="text-sm font-medium hidden sm:block">

@@ -15,19 +15,19 @@ interface StatsCardProps {
 
 const colorMap = {
   indigo: {
-    icon: "bg-gradient-to-br from-indigo-400 to-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-indigo-900/40",
+    icon: "bg-indigo-600 text-white",
     border: "border-t-indigo-500",
   },
   emerald: {
-    icon: "bg-gradient-to-br from-emerald-400 to-emerald-600 text-white shadow-sm shadow-emerald-200 dark:shadow-emerald-900/40",
+    icon: "bg-emerald-600 text-white",
     border: "border-t-emerald-500",
   },
   amber: {
-    icon: "bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-sm shadow-amber-200 dark:shadow-amber-900/40",
+    icon: "bg-amber-500 text-white",
     border: "border-t-amber-500",
   },
   rose: {
-    icon: "bg-gradient-to-br from-rose-400 to-rose-600 text-white shadow-sm shadow-rose-200 dark:shadow-rose-900/40",
+    icon: "bg-rose-600 text-white",
     border: "border-t-rose-500",
   },
 };

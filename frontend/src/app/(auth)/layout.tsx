@@ -1,52 +1,71 @@
+import { Zap } from "lucide-react";
+
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen grid lg:grid-cols-2">
-      {/* Left: Branding panel */}
-      <div className="hidden lg:flex flex-col justify-between relative bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-600 p-12 text-white overflow-hidden">
-        {/* Decorative background elements */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-white/5 pointer-events-none" />
-        <div className="absolute -bottom-32 -left-32 w-[480px] h-[480px] rounded-full bg-white/5 pointer-events-none" />
-        <div className="absolute top-1/2 -translate-y-1/2 right-0 w-64 h-64 rounded-full border border-white/10 pointer-events-none" />
-        <div className="absolute top-1/2 -translate-y-1/2 right-[-3rem] w-80 h-80 rounded-full border border-white/10 pointer-events-none" />
+    <div
+      className="min-h-screen flex flex-col relative overflow-hidden"
+      style={{
+        backgroundColor: "#f9fafb",
+        backgroundImage: `radial-gradient(circle, #d1d5db 1px, transparent 1px)`,
+        backgroundSize: "24px 24px",
+      }}
+    >
+      {/* Soft glow blobs */}
+      <div
+        className="pointer-events-none absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full opacity-30"
+        style={{ background: "radial-gradient(circle, #c7d2fe, transparent 70%)" }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-40 -right-40 w-[500px] h-[500px] rounded-full opacity-20"
+        style={{ background: "radial-gradient(circle, #a5b4fc, transparent 70%)" }}
+      />
 
-        <div className="relative flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30">
-            <span className="text-white font-bold text-sm">M</span>
+      {/* Top nav */}
+      <header className="relative w-full flex items-center justify-between px-8 py-5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+            <Zap className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="font-semibold text-lg">Meeting Task Manager</span>
+          <span className="font-semibold text-sm tracking-tight text-gray-800">MeetingTask</span>
         </div>
+        <span className="text-xs text-gray-400 hidden sm:block">AI-powered meeting intelligence</span>
+      </header>
 
-        <div className="relative space-y-6">
-          <h1 className="text-4xl font-bold leading-tight">
-            Turn meetings into<br />action, automatically.
-          </h1>
-          <p className="text-indigo-100 text-lg leading-relaxed">
-            Upload your meeting transcript and let AI extract every task, assign it, and track it — so nothing falls through the cracks.
+      {/* Center content */}
+      <div className="relative flex-1 flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm">
+
+          {/* Accent line above card */}
+          <div className="w-10 h-0.5 bg-indigo-500 rounded-full mx-auto mb-6" />
+
+          {/* Form card */}
+          <div
+            className="bg-white rounded-2xl border border-gray-200 shadow-lg px-8 py-10 relative"
+            style={{ boxShadow: "0 4px 40px -8px rgba(99,102,241,0.12), 0 1px 3px rgba(0,0,0,0.06)" }}
+          >
+            {/* Top-right corner decoration */}
+            <div className="absolute top-0 right-0 w-24 h-24 pointer-events-none">
+              <svg width="96" height="96" viewBox="0 0 96 96" fill="none">
+                <circle cx="96" cy="0" r="60" stroke="#e0e7ff" strokeWidth="1" fill="none"/>
+                <circle cx="96" cy="0" r="40" stroke="#e0e7ff" strokeWidth="1" fill="none"/>
+              </svg>
+            </div>
+
+            {children}
+          </div>
+
+          {/* Dots decoration below card */}
+          <div className="flex justify-center gap-1.5 mt-6">
+            <div className="w-1.5 h-1.5 rounded-full bg-indigo-300" />
+            <div className="w-1.5 h-1.5 rounded-full bg-gray-300" />
+            <div className="w-1.5 h-1.5 rounded-full bg-gray-200" />
+          </div>
+
+          {/* Footer */}
+          <p className="text-center text-xs text-gray-400 mt-4">
+            © 2026 MeetingTask · Built for async teams
           </p>
-
-          <div className="grid grid-cols-2 gap-4 pt-4">
-            {[
-              { label: "Tasks Generated", value: "12,400+" },
-              { label: "Meetings Processed", value: "3,200+" },
-              { label: "Teams Using", value: "480+" },
-              { label: "Avg. Time Saved", value: "2.4 hrs" },
-            ].map((stat) => (
-              <div key={stat.label} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <div className="text-indigo-200 text-sm mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
-
-        <p className="relative text-indigo-200/80 text-sm">
-          © 2026 Meeting Task Manager. Built for async teams.
-        </p>
-      </div>
-
-      {/* Right: Form area */}
-      <div className="flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-md">{children}</div>
       </div>
     </div>
   );

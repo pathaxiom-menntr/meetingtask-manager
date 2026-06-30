@@ -70,23 +70,16 @@ class TaskService:
         db.commit()
         db.refresh(task)
 
-        # Always notify the assignee
-        assigner_name = current_user.full_name or "Someone"
-        if task.assignee_id == current_user.id:
-            notif_title = "You assigned a task to yourself"
-            notif_msg = f"You created: \"{task.title}\""
-        else:
-            notif_title = "New task assigned to you"
-            notif_msg = f"{assigner_name} assigned you: \"{task.title}\""
-
-        NotificationService.create(
-            db,
-            user_id=task.assignee_id,
-            title=notif_title,
-            message=notif_msg,
-            type="task_assigned",
-            task_id=task.id
-        )
+        # Notify the assignee only when it's a different person from the assigner
+        if task.assignee_id != current_user.id:
+            NotificationService.create(
+                db,
+                user_id=task.assignee_id,
+                title="New task assigned to you",
+                message=f"{current_user.full_name or 'Someone'} assigned you: \"{task.title}\"",
+                type="task_assigned",
+                task_id=task.id
+            )
 
         logger.info(
             "Task created: id=%s title=%r assignee_id=%s assigned_by=%s meeting_id=%s",
@@ -274,6 +267,7 @@ class TaskService:
                     detail="Assignee not found"
                 )
 
+            old_assignee_id = task.assignee_id
             task.assignee_id = task_data.assignee_id
 
         if task_data.priority is not None:
@@ -288,6 +282,18 @@ class TaskService:
 
         db.commit()
         db.refresh(task)
+
+        # Notify new assignee if assignee was changed (and it's a different person)
+        if task_data.assignee_id is not None and task_data.assignee_id != old_assignee_id:
+            if task.assignee_id != current_user.id:
+                NotificationService.create(
+                    db,
+                    user_id=task.assignee_id,
+                    title="Task reassigned to you",
+                    message=f"{current_user.full_name or 'Someone'} reassigned you: \"{task.title}\"",
+                    type="task_assigned",
+                    task_id=task.id
+                )
 
         logger.info("Task updated: id=%s user_id=%s", task_id, current_user.id)
         return task
@@ -451,24 +457,20 @@ class TaskService:
                 s["reason"], s["title"], s["assignee_name"]
             )
 
-        # Send one notification per unique assignee (skip self-assignments)
+        # Send one notification per task to the assignee (skip self-assignments)
         assigner_name = current_user.full_name or "Someone"
-        notified_users: set[int] = set()
         for task in created_tasks:
-            if task.assignee_id != current_user.id and task.assignee_id not in notified_users:
-                task_count = sum(1 for t in created_tasks if t.assignee_id == task.assignee_id)
+            if task.assignee_id != current_user.id:
                 NotificationService.create(
                     db,
                     user_id=task.assignee_id,
-                    title=f"{task_count} task{'s' if task_count > 1 else ''} assigned to you",
-                    message=f"{assigner_name} assigned you {task_count} task{'s' if task_count > 1 else ''} from a meeting.",
+                    title="New task assigned to you",
+                    message=f"{assigner_name} assigned you: \"{task.title}\"",
                     type="task_assigned",
                     task_id=task.id
                 )
-                notified_users.add(task.assignee_id)
-    
+
         return {
             "created": created_tasks,
             "skipped": skipped_tasks
-
         }

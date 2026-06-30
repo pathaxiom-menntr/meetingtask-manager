@@ -89,7 +89,7 @@ export default function UploadPage() {
   const currentStageIndex = stages.findIndex((s) => s.key === stage);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold tracking-tight">AI Upload</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
@@ -165,7 +165,7 @@ export default function UploadPage() {
           <button
             onClick={handleUpload}
             disabled={!file || !title.trim()}
-            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white rounded-xl font-medium text-sm transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-indigo-200 dark:shadow-none"
+            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium text-sm transition flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-4 h-4" /> Generate Tasks with AI
           </button>
@@ -243,7 +243,7 @@ export default function UploadPage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           <div className="bg-card border rounded-2xl p-8 space-y-6">
             <div className="flex flex-col items-center text-center gap-2">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-950 dark:to-violet-950 rounded-2xl flex items-center justify-center shadow-sm">
+              <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl flex items-center justify-center">
                 <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
               </div>
               <p className="text-sm font-medium">Processing your transcript...</p>

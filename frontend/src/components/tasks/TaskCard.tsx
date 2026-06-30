@@ -174,8 +174,8 @@ function DueDateChip({
         isOverdue
           ? "bg-red-500/10 text-red-500 border border-red-500/25"
           : isToday
-          ? "bg-orange-500/10 text-orange-500 border border-orange-500/25"
-          : "bg-muted text-muted-foreground border border-border"
+            ? "bg-orange-500/10 text-orange-500 border border-orange-500/25"
+            : "bg-muted text-muted-foreground border border-border"
       )}
     >
       <Calendar className="w-3 h-3" />

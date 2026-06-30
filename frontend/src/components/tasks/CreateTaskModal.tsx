@@ -70,12 +70,12 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
+          {/* Backdrop — dark overlay, no blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50"
             onClick={handleClose}
           />
 
@@ -184,7 +184,7 @@ export function CreateTaskModal({ open, onClose, users }: CreateTaskModalProps) 
                 <button
                   type="submit"
                   disabled={mutation.isPending}
-                  className="flex-1 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-60 shadow-sm shadow-indigo-200 dark:shadow-none"
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {mutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
                   {mutation.isPending ? "Creating..." : "Create Task"}

@@ -91,7 +91,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="w-full space-y-8">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -8 }}
@@ -108,7 +108,7 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/upload"
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 text-white rounded-xl text-sm font-medium transition shadow-sm shadow-indigo-200 dark:shadow-none"
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition"
         >
           <Plus className="w-4 h-4" /> New Upload
         </Link>

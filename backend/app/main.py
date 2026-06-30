@@ -2,6 +2,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.logger import get_logger
+from app.db.database import engine, Base
+
+# Import all models so SQLAlchemy registers them before create_all
+import app.models.user          # noqa: F401
+import app.models.meeting       # noqa: F401
+import app.models.task          # noqa: F401
+import app.models.notification  # noqa: F401
 
 from app.api.v1.user import router as user_router
 from app.api.v1.auth import router as auth_router
@@ -45,4 +52,7 @@ def root():
 
 @app.on_event("startup")
 def on_startup():
+    # Create any missing tables (safe — skips tables that already exist)
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables verified/created")
     logger.info("Meeting Task Manager API started")
