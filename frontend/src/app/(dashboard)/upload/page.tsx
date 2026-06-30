@@ -67,7 +67,7 @@ export default function UploadPage() {
       setResult(data);
       setStage("done");
       queryClient.invalidateQueries({ queryKey: ["meetings", "tasks", "dashboard"] });
-      toast.success(`${data.tasks.length} tasks generated!`);
+      toast.success(`${data.tasks.length} task${data.tasks.length !== 1 ? "s" : ""} generated!`);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
@@ -183,10 +183,12 @@ export default function UploadPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                Meeting saved!
+                {result.tasks.length} task{result.tasks.length !== 1 ? "s" : ""} generated!
               </p>
               <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 mt-0.5">
-                AI is extracting tasks in the background — check Tasks in a moment.
+                {result.skipped.length > 0
+                  ? `${result.skipped.length} skipped — assignee not found in team.`
+                  : "All action items extracted successfully."}
               </p>
             </div>
           </div>
@@ -204,6 +206,46 @@ export default function UploadPage() {
               View Tasks <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
+
+          {/* Generated tasks */}
+          {result.tasks.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold">Generated Tasks</h3>
+              {result.tasks.map((task, i) => (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  className="flex items-start gap-3 p-3 bg-card border rounded-xl"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{task.title}</p>
+                    {task.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{task.description}</p>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* Skipped tasks */}
+          {result.skipped.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-muted-foreground">Skipped</h3>
+              {result.skipped.map((s, i) => (
+                <div key={i} className="flex items-start gap-2 p-3 bg-muted/50 rounded-xl">
+                  <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm">{s.title ?? "Untitled"}</p>
+                    <p className="text-xs text-muted-foreground">{s.reason}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button
