@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { User } from "@/types";
+import { api } from "@/services/api";
 
 interface AuthState {
   user: User | null;
@@ -9,12 +10,12 @@ interface AuthState {
   isAuthenticated: boolean;
   setTokens: (access: string, refresh: string) => void;
   setUser: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -28,7 +29,17 @@ export const useAuthStore = create<AuthState>()(
 
       setUser: (user) => set({ user }),
 
-      logout: () => {
+      logout: async () => {
+        const { refreshToken } = get();
+        if (refreshToken) {
+          try {
+            await api.post("/auth/logout", { refresh_token: refreshToken });
+          } catch (error) {
+            console.error("Failed to logout server-side:", error);
+            // Even if server fails, we still want to clear local state
+          }
+        }
+        
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });

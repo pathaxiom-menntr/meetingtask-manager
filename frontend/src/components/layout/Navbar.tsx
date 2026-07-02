@@ -124,8 +124,8 @@ export function Navbar() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     toast.success("Signed out");
     router.push("/login");
   };
