@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = ""
 
     # Max transcript characters sent to AI (prevents runaway costs/timeouts)
-    MAX_TRANSCRIPT_CHARS: int = 50_000
+    MAX_TRANSCRIPT_CHARS: int = 200_000
 
     class Config:
         env_file = ".env"
