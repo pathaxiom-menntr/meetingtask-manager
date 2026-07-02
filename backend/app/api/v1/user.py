@@ -20,7 +20,7 @@ def get_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return UserService.get_users(db, pagination.skip, pagination.limit)
+    return UserService.get_users(db, current_user.team_code, pagination.skip, pagination.limit)
 
 
 @router.get("/{user_id}", response_model=UserResponse)

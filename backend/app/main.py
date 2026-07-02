@@ -27,7 +27,8 @@ logger = get_logger(__name__)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",   # React / Next.js
+        "http://localhost:3000",
+        "http://localhost:3001",# React / Next.js
         "http://localhost:5173",   # Vite
     ],
     allow_credentials=True,

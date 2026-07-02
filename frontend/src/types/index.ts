@@ -4,17 +4,20 @@ export interface User {
   id: number;
   full_name: string;
   email: string;
+  team_code: string;
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
+  team_code: string;
 }
 
 export interface RegisterRequest {
   full_name: string;
   email: string;
   password: string;
+  team_code: string;
 }
 
 export interface AuthTokens {
@@ -74,12 +77,21 @@ export interface SkippedTask {
   title: string | null;
   assignee_name: string | null;
   reason: string;
+  auto_assigned: boolean;
+  auto_assigned_to: string | null;
+}
+
+export interface AutoAssignedTask {
+  task: Task;
+  auto_assigned: boolean;
+  auto_assigned_to: string | null;
 }
 
 export interface MeetingUploadResponse {
   meeting: Meeting;
   tasks: Task[];
   skipped: SkippedTask[];
+  auto_assigned_tasks: AutoAssignedTask[];
 }
 
 export interface DashboardStats {

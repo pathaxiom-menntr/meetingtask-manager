@@ -57,7 +57,7 @@ backend/
     │   ├── task.py             # TaskService: CRUD + AI task creation
     │   ├── dashboard.py        # DashboardService: aggregate stats
     │   ├── ai.py               # AIService: calls Azure OpenAI to extract tasks
-    │   └── transcript_extractor.py  # (stub/in progress)
+    │   
     │
     ├── utils/
     │   └── transcript.py       # extract_text(): parse TXT, MD, PDF, DOCX files

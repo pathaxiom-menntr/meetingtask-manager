@@ -87,7 +87,8 @@ def upload_transcript(
     return {
         "meeting": meeting,
         "tasks": result["created"],
-        "skipped": result["skipped"]
+        "skipped": result["skipped"],
+        "auto_assigned_tasks": result["auto_assigned_tasks"],
     }
 
 @router.get(

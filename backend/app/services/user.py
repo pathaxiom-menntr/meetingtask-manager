@@ -46,11 +46,13 @@ class UserService:
     @staticmethod
     def get_users(
         db: Session,
+        team_code: str,
         skip: int = 0,
         limit: int = 20
     ):
         return (
             db.query(User)
+            .filter(User.team_code == team_code)
             .offset(skip)
             .limit(limit)
             .all()

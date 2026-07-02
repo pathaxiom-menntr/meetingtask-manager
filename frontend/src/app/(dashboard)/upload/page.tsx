@@ -3,13 +3,13 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useDropzone } from "react-dropzone";
-import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, X, Loader2, Sparkles, ArrowRight, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { meetingsService } from "@/services/meetings.service";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import type { MeetingUploadResponse } from "@/types";
+import type { MeetingUploadResponse, AutoAssignedTask } from "@/types";
 
 type Stage = "idle" | "uploading" | "extracting" | "generating" | "done" | "error";
 
@@ -187,7 +187,9 @@ export default function UploadPage() {
               </p>
               <p className="text-xs text-emerald-600/70 dark:text-emerald-500/70 mt-0.5">
                 {result.skipped.length > 0
-                  ? `${result.skipped.length} skipped — assignee not found in team.`
+                  ? `${result.skipped.length} skipped — no users available.`
+                  : result.auto_assigned_tasks?.some((t) => t.auto_assigned)
+                  ? `${result.auto_assigned_tasks.filter((t) => t.auto_assigned).length} auto-assigned to least-loaded team member.`
                   : "All action items extracted successfully."}
               </p>
             </div>
@@ -228,6 +230,35 @@ export default function UploadPage() {
                   </div>
                 </motion.div>
               ))}
+            </div>
+          )}
+
+          {/* Auto-assigned tasks notice */}
+          {result.auto_assigned_tasks?.some((t) => t.auto_assigned) && (
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400">Auto-Assigned</h3>
+              {result.auto_assigned_tasks
+                .filter((t): t is AutoAssignedTask => t.auto_assigned)
+                .map((item, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                    className="flex items-start gap-3 p-3 rounded-xl border border-blue-200 dark:border-blue-800"
+                    style={{ background: "rgba(59,130,246,0.06)" }}
+                  >
+                    <UserCheck className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{item.task.title}</p>
+                      <p className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-0.5">
+                        No assignee found — assigned to{" "}
+                        <span className="font-semibold">{item.auto_assigned_to}</span>{" "}
+                        (fewest tasks)
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
             </div>
           )}
 

@@ -25,21 +25,28 @@ class AuthService:
     ):
         existing_user = (
             db.query(User)
-            .filter(User.email == user_data.email)
+            .filter(
+                User.email == user_data.email,
+                User.team_code == user_data.team_code
+            )
             .first()
         )
 
         if existing_user:
-            logger.warning("Register failed — email already exists: %s", user_data.email)
+            logger.warning(
+                "Register failed — email already exists in team: %s / %s",
+                user_data.email, user_data.team_code
+            )
             raise HTTPException(
                 status_code=400,
-                detail="Email already exists"
+                detail="Email already registered in this team"
             )
 
         user = User(
             full_name=user_data.full_name,
             email=user_data.email,
-            password_hash=hash_password(user_data.password)
+            password_hash=hash_password(user_data.password),
+            team_code=user_data.team_code
         )
 
         db.add(user)
@@ -56,15 +63,21 @@ class AuthService:
     ):
         user = (
             db.query(User)
-            .filter(User.email == login_data.email)
+            .filter(
+                User.email == login_data.email,
+                User.team_code == login_data.team_code
+            )
             .first()
         )
 
         if not user:
-            logger.warning("Login failed — user not found: %s", login_data.email)
+            logger.warning(
+                "Login failed — user not found: %s / team: %s",
+                login_data.email, login_data.team_code
+            )
             raise HTTPException(
                 status_code=401,
-                detail="Invalid email or password"
+                detail="Invalid email, team code, or password"
             )
 
         if not verify_password(
@@ -74,7 +87,7 @@ class AuthService:
             logger.warning("Login failed — wrong password: %s", login_data.email)
             raise HTTPException(
                 status_code=401,
-                detail="Invalid email or password"
+                detail="Invalid email, team code, or password"
             )
 
         access_token = create_access_token(data={"sub": str(user.id)})
