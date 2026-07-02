@@ -25,6 +25,7 @@ else:
     # Development fallback
     allowed_origins = [
         "http://localhost:3000",
+        "http://4.213.227.99:3000",
         "http://localhost:3001",
         "http://localhost:5173",
     ]

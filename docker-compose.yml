@@ -21,7 +21,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -39,7 +39,7 @@ services:
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       REFRESH_TOKEN_EXPIRE_DAYS: 7
-      ALLOWED_ORIGINS: "http://localhost:3000"
+      ALLOWED_ORIGINS: "http://4.213.227.99:3000"
       LOG_LEVEL: info
       WORKERS: 2
       # Azure OpenAI — fill in or use a .env file
