@@ -10,6 +10,8 @@ from app.db.database import Base
 from app.models.user import User
 from app.models.meeting import Meeting
 from app.models.task import Task
+from app.models.notification import Notification
+from app.models.refresh_token import RefreshToken
 
 
 config = context.config
