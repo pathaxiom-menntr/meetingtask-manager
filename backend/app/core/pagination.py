@@ -21,8 +21,7 @@ class PaginationParams:
         limit: int = Query(
             default=20,
             ge=1,
-            le=100,
-            description="Max number of records to return (max 100)"
+            description="Max number of records to return"
         ),
     ):
         self.skip = skip
