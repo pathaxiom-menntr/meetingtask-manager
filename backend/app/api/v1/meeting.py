@@ -114,7 +114,8 @@ def get_meeting_by_id(
 ):
     return MeetingService.get_meeting_by_id(
         db,
-        meeting_id
+        meeting_id,
+        current_user
     )
 
 

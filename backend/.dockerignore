@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environment — never copy into image
+venv/
+.venv/
+env/
+
+# Local secrets — injected by Azure at runtime
+.env
+.env.*
+*.env
+
+# Dev/test files
+tests/
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Alembic cache
+alembic/versions/__pycache__/
+
+# Editor / OS artefacts
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Docker itself
+Dockerfile*
+docker-compose*
+.dockerignore

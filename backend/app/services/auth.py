@@ -1,8 +1,13 @@
+import hashlib
+from datetime import datetime, timedelta, timezone
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.logger import get_logger
+from app.core.config import settings
 from app.models.user import User
+from app.models.refresh_token import RefreshToken
 from app.schemas.user import UserCreate
 from app.schemas.auth import LoginRequest, RefreshRequest
 
@@ -15,6 +20,56 @@ from app.core.security import (
 )
 
 logger = get_logger(__name__)
+
+
+def _hash_token(token: str) -> str:
+    """Return SHA-256 hex digest of a raw JWT string."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _store_refresh_token(db: Session, user_id: int, token: str) -> None:
+    """Persist a new refresh token record (hashed) to the DB."""
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
+    record = RefreshToken(
+        token_hash=_hash_token(token),
+        user_id=user_id,
+        is_revoked=False,
+        expires_at=expires_at,
+    )
+    db.add(record)
+    db.commit()
+
+
+def _revoke_refresh_token(db: Session, token: str) -> None:
+    """Mark a stored refresh token as revoked."""
+    record = (
+        db.query(RefreshToken)
+        .filter(RefreshToken.token_hash == _hash_token(token))
+        .first()
+    )
+    if record:
+        record.is_revoked = True
+        db.commit()
+
+
+def _validate_refresh_token(db: Session, token: str) -> None:
+    """
+    Raise 401 if the token is not in the DB, already revoked, or expired.
+    """
+    record = (
+        db.query(RefreshToken)
+        .filter(RefreshToken.token_hash == _hash_token(token))
+        .first()
+    )
+    if not record:
+        raise HTTPException(status_code=401, detail="Refresh token not recognised")
+    if record.is_revoked:
+        raise HTTPException(status_code=401, detail="Refresh token has been revoked")
+    if record.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Refresh token has expired")
+
 
 class AuthService:
 
@@ -80,10 +135,7 @@ class AuthService:
                 detail="Invalid email, team code, or password"
             )
 
-        if not verify_password(
-            login_data.password,
-            user.password_hash
-        ):
+        if not verify_password(login_data.password, user.password_hash):
             logger.warning("Login failed — wrong password: %s", login_data.email)
             raise HTTPException(
                 status_code=401,
@@ -92,6 +144,9 @@ class AuthService:
 
         access_token = create_access_token(data={"sub": str(user.id)})
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+        # Store refresh token hash so it can be revoked later
+        _store_refresh_token(db, user.id, refresh_token)
 
         logger.info("User logged in: id=%s email=%s", user.id, user.email)
         return {
@@ -105,47 +160,48 @@ class AuthService:
         db: Session,
         request: RefreshRequest
     ):
-        payload = decode_refresh_token(
-            request.refresh_token
-        )
+        # 1. Decode & verify the JWT signature / expiry
+        payload = decode_refresh_token(request.refresh_token)
 
         user_id = payload.get("sub")
-
         if user_id is None:
-            raise HTTPException(
-                status_code=401,
-                detail="Invalid refresh token"
-            )
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+        # 2. Verify the token is in our DB and hasn't been revoked
+        _validate_refresh_token(db, request.refresh_token)
 
         user = (
             db.query(User)
             .filter(User.id == int(user_id))
             .first()
         )
-
         if not user:
-            raise HTTPException(
-                status_code=404,
-                detail="User not found"
-            )
+            raise HTTPException(status_code=404, detail="User not found")
 
-        access_token = create_access_token(
-            data={
-                "sub": str(user.id)
-            }
-        )
+        # 3. Rotate — revoke old token, issue a fresh pair
+        _revoke_refresh_token(db, request.refresh_token)
 
-        refresh_token = create_refresh_token(
-            data={
-                "sub": str(user.id)
-            }
-        )
+        access_token = create_access_token(data={"sub": str(user.id)})
+        new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
+        _store_refresh_token(db, user.id, new_refresh_token)
+
+        logger.info("Token rotated: user_id=%s", user.id)
         return {
             "access_token": access_token,
-            "refresh_token": refresh_token,
+            "refresh_token": new_refresh_token,
             "token_type": "bearer"
         }
+
+    @staticmethod
+    def logout(
+        db: Session,
+        refresh_token: str
+    ):
+        """Revoke the provided refresh token so it can no longer be used."""
+        _revoke_refresh_token(db, refresh_token)
+        logger.info("Refresh token revoked on logout")
+        return {"message": "Logged out successfully"}
 
     @staticmethod
     def get_current_user(

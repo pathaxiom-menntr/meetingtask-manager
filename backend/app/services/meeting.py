@@ -62,11 +62,16 @@ class MeetingService:
     @staticmethod
     def get_meeting_by_id(
         db: Session,
-        meeting_id: int
+        meeting_id: int,
+        current_user: User
     ):
         meeting = (
             db.query(Meeting)
-            .filter(Meeting.id == meeting_id)
+            .join(User, User.id == Meeting.uploaded_by)
+            .filter(
+                Meeting.id == meeting_id,
+                User.team_code == current_user.team_code
+            )
             .first()
         )
 
@@ -85,17 +90,7 @@ class MeetingService:
         meeting_data: MeetingUpdate,
         current_user: User
     ):
-        meeting = (
-            db.query(Meeting)
-            .filter(Meeting.id == meeting_id)
-            .first()
-        )
-
-        if not meeting:
-            raise HTTPException(
-                status_code=404,
-                detail="Meeting not found"
-            )
+        meeting = MeetingService.get_meeting_by_id(db, meeting_id, current_user)
 
         # Only creator can update
         if meeting.uploaded_by != current_user.id:
@@ -122,17 +117,7 @@ class MeetingService:
         meeting_id: int,
         current_user: User
     ):
-        meeting = (
-            db.query(Meeting)
-            .filter(Meeting.id == meeting_id)
-            .first()
-        )
-
-        if not meeting:
-            raise HTTPException(
-                status_code=404,
-                detail="Meeting not found"
-            )
+        meeting = MeetingService.get_meeting_by_id(db, meeting_id, current_user)
 
         # Only creator can delete
         if meeting.uploaded_by != current_user.id:

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import uuid
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -48,7 +49,8 @@ def create_access_token(data: dict) -> str:
     to_encode.update(
         {
             "exp": expire,
-            "type": "access"
+            "type": "access",
+            "jti": str(uuid.uuid4()),   # unique token ID — prevents hash collisions
         }
     )
 
@@ -72,7 +74,8 @@ def create_refresh_token(data: dict) -> str:
     to_encode.update(
         {
             "exp": expire,
-            "type": "refresh"
+            "type": "refresh",
+            "jti": str(uuid.uuid4()),   # unique token ID — prevents hash collisions
         }
     )
 

@@ -61,7 +61,8 @@ def get_task_by_id(
 ):
     return TaskService.get_task_by_id(
         db,
-        task_id
+        task_id,
+        current_user
     )
 
 
@@ -91,7 +92,7 @@ def get_tasks_by_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return TaskService.get_tasks_by_user(db, user_id, pagination.skip, pagination.limit)
+    return TaskService.get_tasks_by_user(db, user_id, current_user, pagination.skip, pagination.limit)
 
 
 @router.get(
@@ -104,7 +105,7 @@ def get_tasks_by_meeting(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    return TaskService.get_tasks_by_meeting(db, meeting_id, pagination.skip, pagination.limit)
+    return TaskService.get_tasks_by_meeting(db, meeting_id, current_user, pagination.skip, pagination.limit)
 
 
 @router.put(

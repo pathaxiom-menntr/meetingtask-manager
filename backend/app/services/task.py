@@ -24,14 +24,17 @@ class TaskService:
     ):
         assignee = (
             db.query(User)
-            .filter(User.id == task_data.assignee_id)
+            .filter(
+                User.id == task_data.assignee_id,
+                User.team_code == current_user.team_code
+            )
             .first()
         )
 
         if not assignee:
             raise HTTPException(
                 status_code=404,
-                detail="Assignee not found"
+                detail="Assignee not found or not in your team"
             )
 
         if task_data.meeting_id is not None:
@@ -108,11 +111,17 @@ class TaskService:
     @staticmethod
     def get_task_by_id(
         db: Session,
-        task_id: int
+        task_id: int,
+        current_user: User
     ):
+        # Join to users table on assignee to verify the task belongs to this team
         task = (
             db.query(Task)
-            .filter(Task.id == task_id)
+            .join(User, User.id == Task.assignee_id)
+            .filter(
+                Task.id == task_id,
+                User.team_code == current_user.team_code
+            )
             .first()
         )
 
@@ -128,12 +137,17 @@ class TaskService:
     def get_tasks_by_user(
         db: Session,
         user_id: int,
+        current_user: User,
         skip: int = 0,
         limit: int = 20
     ):
+        # Ensure the requested user belongs to the same team
         user = (
             db.query(User)
-            .filter(User.id == user_id)
+            .filter(
+                User.id == user_id,
+                User.team_code == current_user.team_code
+            )
             .first()
         )
 
@@ -155,12 +169,19 @@ class TaskService:
     def get_tasks_by_meeting(
         db: Session,
         meeting_id: int,
+        current_user: User,
         skip: int = 0,
         limit: int = 20
     ):
+        # Verify the meeting belongs to this team
+        from app.models.meeting import Meeting as MeetingModel
         meeting = (
-            db.query(Meeting)
-            .filter(Meeting.id == meeting_id)
+            db.query(MeetingModel)
+            .join(User, User.id == MeetingModel.uploaded_by)
+            .filter(
+                MeetingModel.id == meeting_id,
+                User.team_code == current_user.team_code
+            )
             .first()
         )
 
@@ -257,14 +278,17 @@ class TaskService:
         if task_data.assignee_id is not None:
             assignee = (
                 db.query(User)
-                .filter(User.id == task_data.assignee_id)
+                .filter(
+                    User.id == task_data.assignee_id,
+                    User.team_code == current_user.team_code
+                )
                 .first()
             )
 
             if not assignee:
                 raise HTTPException(
                     status_code=404,
-                    detail="Assignee not found"
+                    detail="Assignee not found or not in your team"
                 )
 
             old_assignee_id = task.assignee_id
@@ -332,16 +356,16 @@ class TaskService:
         }
     
     @staticmethod
-    def _get_least_loaded_user(db: Session) -> User | None:
+    def _get_least_loaded_user(db: Session, team_code: str) -> User | None:
         """
-        Return the user who currently has the fewest pending tasks.
-        Falls back to the first user registered if the table is empty.
+        Return the team member with the fewest pending tasks.
+        Only considers users belonging to the given team_code.
         """
         from sqlalchemy import func
 
-        # Count pending tasks per user
         counts = (
             db.query(User.id, func.count(Task.id).label("task_count"))
+            .filter(User.team_code == team_code)          # ← team-scoped
             .outerjoin(Task, (Task.assignee_id == User.id) & (Task.status == "pending"))
             .group_by(User.id)
             .order_by(func.count(Task.id).asc())
@@ -433,7 +457,7 @@ class TaskService:
             # If we still have no assignee (name missing OR user not in DB),
             # fall back to the least-loaded team member.
             if not assignee:
-                assignee = TaskService._get_least_loaded_user(db)
+                assignee = TaskService._get_least_loaded_user(db, current_user.team_code)
                 auto_assigned = True
 
             # If there are genuinely no users in the system, skip.

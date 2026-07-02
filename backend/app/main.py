@@ -2,13 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.logger import get_logger
-from app.db.database import engine, Base
-
-# Import all models so SQLAlchemy registers them before create_all
-import app.models.user          # noqa: F401
-import app.models.meeting       # noqa: F401
-import app.models.task          # noqa: F401
-import app.models.notification  # noqa: F401
+from app.core.config import settings
 
 from app.api.v1.user import router as user_router
 from app.api.v1.auth import router as auth_router
@@ -23,17 +17,24 @@ app = FastAPI(
 
 logger = get_logger(__name__)
 
-# Allow frontend dev servers to call the API
+# Parse allowed origins from config (comma-separated in .env for production)
+_raw_origins = getattr(settings, "ALLOWED_ORIGINS", None)
+if _raw_origins:
+    allowed_origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+else:
+    # Development fallback
+    allowed_origins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",# React / Next.js
-        "http://localhost:5173",   # Vite
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
 )
 
 app.include_router(user_router)
@@ -53,7 +54,6 @@ def root():
 
 @app.on_event("startup")
 def on_startup():
-    # Create any missing tables (safe — skips tables that already exist)
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables verified/created")
+    # Schema is managed exclusively by Alembic migrations.
+    # Do NOT call Base.metadata.create_all() here — it bypasses migration history.
     logger.info("Meeting Task Manager API started")
