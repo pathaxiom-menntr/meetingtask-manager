@@ -30,19 +30,25 @@ def extract_text(file: UploadFile) -> str:
 
     elif filename.endswith(".pdf"):
         import io
-        reader = PdfReader(io.BytesIO(raw))
-        text = ""
-        for page in reader.pages:
-            page_text = page.extract_text()
-            if page_text:
-                text += page_text + "\n"
+        try:
+            reader = PdfReader(io.BytesIO(raw))
+            text = ""
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text += page_text + "\n"
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to read PDF file. It might be corrupted or invalid: {str(e)}")
 
     elif filename.endswith(".docx"):
         import io
-        document = Document(io.BytesIO(raw))
-        text = "\n".join(
-            p.text for p in document.paragraphs if p.text.strip()
-        )
+        try:
+            document = Document(io.BytesIO(raw))
+            text = "\n".join(
+                p.text for p in document.paragraphs if p.text.strip()
+            )
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Failed to read DOCX file. It might be corrupted or invalid: {str(e)}")
 
     else:
         raise HTTPException(

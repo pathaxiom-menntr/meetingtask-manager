@@ -56,31 +56,31 @@ class AIService:
 
     @staticmethod
     def generate_tasks(transcript: str) -> list[dict]:
-        response = client.chat.completions.create(
-            model=settings.AZURE_OPENAI_DEPLOYMENT,
-            messages=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT,
-                },
-                {
-                    "role": "user",
-                    "content": transcript,
-                },
-            ],
-            temperature=0.2,
-            response_format={"type": "json_object"},
-        )
-
-        content = response.choices[0].message.content
-
-        if content is None:
-            return []
-
         try:
+            response = client.chat.completions.create(
+                model=settings.AZURE_OPENAI_DEPLOYMENT,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": SYSTEM_PROMPT,
+                    },
+                    {
+                        "role": "user",
+                        "content": transcript,
+                    },
+                ],
+                temperature=0.2,
+                response_format={"type": "json_object"},
+            )
+
+            content = response.choices[0].message.content
+
+            if content is None:
+                return []
+
             data = json.loads(content)
             return data.get("tasks", [])
-        except json.JSONDecodeError:
-            return []
-        except AttributeError:
-            return []
+        except Exception as e:
+            from fastapi import HTTPException
+            print(f"AI Service Error: {str(e)}")
+            raise HTTPException(status_code=502, detail=f"AI Processing failed: {str(e)}")

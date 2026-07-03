@@ -410,6 +410,9 @@ class TaskService:
                 status_code=404,
                 detail="Meeting not found"
             )
+
+        if not ai_tasks:
+            ai_tasks = []
     
         created_tasks = []
         skipped_tasks = []
