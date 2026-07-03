@@ -432,6 +432,11 @@ class TaskService:
                 ai_task.get("assignee_name")
                 or ai_task.get("assignee")
             )
+            
+            assigner_name = (
+                ai_task.get("assigner_name")
+                or ai_task.get("assigner")
+            )
     
             # Skip tasks without a title — we can't do anything useful here
             if not title:
@@ -475,6 +480,16 @@ class TaskService:
                     }
                 )
                 continue
+                
+            assigner_id = current_user.id
+            if assigner_name:
+                assigner_user = (
+                    db.query(User)
+                    .filter(User.full_name.ilike(f"%{assigner_name}%"))
+                    .first()
+                )
+                if assigner_user:
+                    assigner_id = assigner_user.id
             
             priority = ai_task.get("priority", "medium") or "medium"
             if priority not in ("low", "medium", "high", "critical"):
@@ -494,7 +509,7 @@ class TaskService:
                 status="pending",
                 priority=priority,
                 assignee_id=assignee.id,
-                assigned_by=current_user.id,
+                assigned_by=assigner_id,
                 meeting_id=meeting_id,
                 due_date=due_date
             )
