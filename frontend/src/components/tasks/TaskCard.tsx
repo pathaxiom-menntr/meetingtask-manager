@@ -30,6 +30,7 @@ interface TaskCardProps {
   task: Task;
   users?: UserType[];
   onComplete?: (id: number) => void;
+  onUncomplete?: (id: number) => void;
   onDelete?: (id: number) => void;
   index?: number;
 }
@@ -218,6 +219,7 @@ export function TaskCard({
   task,
   users = [],
   onComplete,
+  onUncomplete,
   onDelete,
   index = 0,
 }: TaskCardProps) {
@@ -240,71 +242,49 @@ export function TaskCard({
       transition={{ duration: 0.22, delay: index * 0.035 }}
       layout
       className={cn(
-        "group relative rounded-2xl border bg-card overflow-hidden",
+        "group relative rounded-xl border bg-card overflow-hidden",
         "transition-all duration-200",
-        "hover:shadow-lg hover:-translate-y-0.5",
+        "hover:shadow-md hover:-translate-y-0.5",
         cfg.glow,
-        isCompleted && "opacity-55"
+        isCompleted && "opacity-60 grayscale-[0.2]"
       )}
     >
-      {/* Left priority bar */}
-      <div
-        className={cn(
-          "absolute left-0 inset-y-0 w-[3px] rounded-r-full",
-          cfg.bar
-        )}
-      />
+      {/* Top accent bar */}
+      <div className={cn("absolute top-0 inset-x-0 h-1", cfg.bar)} />
 
-      <div className="pl-4 pr-4 pt-3.5 pb-3">
-        {/* ── Row 1: ID + badges + actions ── */}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="font-mono text-[10px] text-muted-foreground/40 tracking-widest shrink-0">
-            MTM-{task.id}
-          </span>
-
-          <PriorityBadge priority={priority} />
-          <StatusBadge completed={isCompleted} />
-
-          {task.meeting_id && (
-            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
-              <Link2 className="w-3 h-3" />
-              Meeting #{task.meeting_id}
+      <div className="p-4 pt-5">
+        {/* ── Row 1: Header (ID, Priority, Actions) ── */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-mono text-[11px] text-muted-foreground font-semibold tracking-wider">
+              MTM-{task.id}
             </span>
-          )}
+            <PriorityBadge priority={priority} />
+          </div>
 
-          {/* Push actions to the right */}
-          <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {/* Complete — only for assignee */}
+          <div className="flex items-center gap-0.5 text-muted-foreground shrink-0 bg-secondary/30 rounded-md p-0.5">
             {isAssignee ? (
               <button
-                onClick={() => !isCompleted && onComplete?.(task.id)}
-                disabled={isCompleted}
-                title={isCompleted ? "Already completed" : "Mark as complete"}
+                onClick={() => isCompleted ? onUncomplete?.(task.id) : onComplete?.(task.id)}
+                title={isCompleted ? "Mark as pending" : "Mark as complete"}
                 className={cn(
-                  "p-1.5 rounded-lg transition-all",
+                  "p-1.5 rounded-md transition-all",
                   isCompleted
-                    ? "text-emerald-500 cursor-default"
-                    : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10 hover:scale-110"
+                    ? "text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20"
+                    : "text-muted-foreground hover:text-emerald-500 hover:bg-emerald-500/10"
                 )}
               >
-                {isCompleted ? (
-                  <CheckCircle2 className="w-4 h-4" />
-                ) : (
-                  <Circle className="w-4 h-4" />
-                )}
+                {isCompleted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
               </button>
             ) : (
-              <span
-                title="Only the assignee can complete this task"
-                className="p-1.5 text-muted-foreground/30 cursor-not-allowed"
-              >
+              <span title="Only assignee can complete" className="p-1.5 text-muted-foreground/30 cursor-not-allowed">
                 <LockIcon className="w-3.5 h-3.5" />
               </span>
             )}
 
             <Link
               href={`/tasks/${task.id}`}
-              className="p-1.5 rounded-lg transition hover:bg-accent text-muted-foreground hover:text-foreground"
+              className="p-1.5 rounded-md transition hover:bg-accent text-muted-foreground hover:text-foreground"
               title="Open task"
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -312,7 +292,7 @@ export function TaskCard({
 
             <button
               onClick={() => onDelete?.(task.id)}
-              className="p-1.5 rounded-lg transition hover:bg-red-500/10"
+              className="p-1.5 rounded-md transition hover:bg-red-500/10"
               title="Delete task"
             >
               <Trash2 className="w-3.5 h-3.5 text-red-400" />
@@ -320,123 +300,94 @@ export function TaskCard({
           </div>
         </div>
 
-        {/* ── Row 2: Title ── */}
-        <div className="flex items-start gap-2 mb-1">
-          {/* Inline complete toggle — only for the assignee */}
-          {isAssignee ? (
-            <button
-              onClick={() => !isCompleted && onComplete?.(task.id)}
-              disabled={isCompleted}
-              title={isCompleted ? "Completed" : "Mark as complete"}
-              className={cn(
-                "mt-0.5 shrink-0 transition-all",
-                isCompleted
-                  ? "text-emerald-500 cursor-default"
-                  : "text-muted-foreground/30 hover:text-emerald-500 hover:scale-110"
-              )}
-            >
-              {isCompleted ? (
-                <CheckCircle2 className="w-4 h-4" />
-              ) : (
-                <Circle className="w-4 h-4" />
-              )}
-            </button>
-          ) : (
-            <span className="mt-0.5 shrink-0">
-              {isCompleted ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-              ) : (
-                <Circle className="w-4 h-4 text-muted-foreground/20" />
-              )}
-            </span>
-          )}
-
+        {/* ── Row 2: Title & Description ── */}
+        <div className="mb-3.5">
           <h3
             className={cn(
-              "text-sm font-semibold leading-snug flex-1",
+              "text-[13px] font-semibold leading-snug mb-1.5",
               isCompleted && "line-through text-muted-foreground"
             )}
           >
             {task.title}
           </h3>
+
+          {task.description && (
+            <div>
+              <AnimatePresence initial={false}>
+                <motion.p
+                  key={expanded ? "expanded" : "collapsed"}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className={cn(
+                    "text-[11px] text-muted-foreground leading-relaxed",
+                    !expanded && "line-clamp-2"
+                  )}
+                >
+                  {task.description}
+                </motion.p>
+              </AnimatePresence>
+              {hasLongDesc && (
+                <button
+                  onClick={() => setExpanded((v) => !v)}
+                  className="mt-1 flex items-center gap-1 text-[10px] font-medium text-indigo-500 hover:text-indigo-400 transition"
+                >
+                  {expanded ? (
+                    <>
+                      <ChevronUp className="w-3 h-3" /> Show less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="w-3 h-3" /> Show more
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* ── Row 3: Description (expandable) ── */}
-        {task.description && (
-          <div className="ml-6 mb-2">
-            <AnimatePresence initial={false}>
-              <motion.p
-                key={expanded ? "expanded" : "collapsed"}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className={cn(
-                  "text-xs text-muted-foreground leading-relaxed",
-                  !expanded && "line-clamp-2"
-                )}
-              >
-                {task.description}
-              </motion.p>
-            </AnimatePresence>
-
-            {hasLongDesc && (
-              <button
-                onClick={() => setExpanded((v) => !v)}
-                className="mt-1 flex items-center gap-1 text-[11px] text-indigo-500 hover:text-indigo-400 transition"
-              >
-                {expanded ? (
-                  <>
-                    <ChevronUp className="w-3 h-3" /> Show less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-3 h-3" /> Show more
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-        )}
+        {/* ── Row 3: Tags / Metadata ── */}
+        <div className="flex flex-wrap gap-1.5 mb-3.5">
+          <StatusBadge completed={isCompleted} />
+          {task.meeting_id && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 font-medium">
+              <Link2 className="w-3 h-3" />
+              Meeting #{task.meeting_id}
+            </span>
+          )}
+        </div>
 
         {/* ── Divider ── */}
-        <div className="border-t border-border/50 my-2.5 ml-6" />
+        <div className="border-t border-border/60 mb-3.5 -mx-4" />
 
-        {/* ── Row 4: Meta footer ── */}
-        <div className="ml-6 flex items-center justify-between flex-wrap gap-x-4 gap-y-1.5">
-          {/* Left: assignee + assigner */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <UserChip
-              label="Assignee"
-              user={assignee}
-              userId={task.assignee_id}
-              icon={UserCheck}
-            />
-            <span className="text-muted-foreground/20 text-xs">|</span>
-            <UserChip
-              label="From"
-              user={assigner}
-              userId={task.assigned_by}
-              icon={UserCog}
-            />
+        {/* ── Row 4: Footer (Users + Dates) ── */}
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: Assignee */}
+          <div className="flex items-center gap-2">
+            <div className="flex -space-x-1.5">
+              {assignee && <UserAvatar name={assignee.full_name} id={task.assignee_id} size="md" />}
+              {assigner && assigner.id !== task.assignee_id && (
+                <UserAvatar name={assigner.full_name} id={task.assigned_by} size="md" />
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground font-medium">
+               {assignee ? assignee.full_name.split(' ')[0] : 'Unassigned'}
+            </span>
           </div>
 
-          {/* Right: date info */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Due date */}
+          {/* Right: Date */}
+          <div className="flex items-center shrink-0">
             <DueDateChip due_date={task.due_date} completed={isCompleted} />
-
-            {/* Completed date */}
-            {isCompleted && task.completed_at && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/25">
-                <CalendarCheck className="w-3 h-3" />
-                Done {formatDateRelative(task.completed_at)}
-              </span>
-            )}
-
-            {/* Created at (when no due date & not completed) */}
             {!task.due_date && !isCompleted && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/50">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-muted/50 text-muted-foreground border border-border/50">
                 <Clock className="w-3 h-3" />
                 {formatDateRelative(task.created_at)}
+              </span>
+            )}
+            {isCompleted && task.completed_at && !task.due_date && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                <CalendarCheck className="w-3 h-3" />
+                Done
               </span>
             )}
           </div>

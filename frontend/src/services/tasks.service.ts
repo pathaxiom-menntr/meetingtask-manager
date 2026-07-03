@@ -12,6 +12,11 @@ export const tasksService = {
     return res.data;
   },
 
+  getTeamPendingTasks: async (params?: PaginationParams): Promise<Task[]> => {
+    const res = await api.get<Task[]>("/tasks/team/pending", { params });
+    return res.data;
+  },
+
   createTask: async (data: TaskCreate): Promise<Task> => {
     const res = await api.post<Task>("/tasks/", data);
     return res.data;
@@ -24,6 +29,11 @@ export const tasksService = {
 
   completeTask: async (id: number): Promise<Task> => {
     const res = await api.patch<Task>(`/tasks/${id}/complete`);
+    return res.data;
+  },
+
+  uncompleteTask: async (id: number): Promise<Task> => {
+    const res = await api.patch<Task>(`/tasks/${id}/uncomplete`);
     return res.data;
   },
 

@@ -51,6 +51,18 @@ def get_tasks(
 
 
 @router.get(
+    "/team/pending",
+    response_model=list[TaskResponse]
+)
+def get_team_pending_tasks(
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return TaskService.get_team_pending_tasks(db, current_user, pagination.skip, pagination.limit)
+
+
+@router.get(
     "/{task_id}",
     response_model=TaskResponse
 )
@@ -76,6 +88,22 @@ def complete_task(
     current_user: User = Depends(get_current_user)
 ):
     return TaskService.complete_task(
+        db,
+        task_id,
+        current_user
+    )
+
+
+@router.patch(
+    "/{task_id}/uncomplete",
+    response_model=TaskResponse
+)
+def uncomplete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return TaskService.uncomplete_task(
         db,
         task_id,
         current_user

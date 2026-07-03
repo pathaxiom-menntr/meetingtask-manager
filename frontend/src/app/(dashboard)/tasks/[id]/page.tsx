@@ -303,7 +303,7 @@ export default function TaskDetailPage() {
 
               {/* Description */}
               {task.description ? (
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
                   {task.description}
                 </p>
               ) : (
