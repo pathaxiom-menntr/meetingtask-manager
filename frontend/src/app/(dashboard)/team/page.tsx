@@ -9,11 +9,17 @@ import { Skeleton } from "@/components/common/LoadingSkeleton";
 
 function TeamMemberSkeleton() {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-2xl border bg-card">
-      <Skeleton className="w-10 h-10 rounded-full shrink-0" />
-      <div className="flex-1 space-y-2 min-w-0">
-        <Skeleton className="h-4 w-40" />
-        <Skeleton className="h-3 w-56" />
+    <div className="flex flex-col gap-4 p-5 rounded-2xl border bg-card">
+      <div className="flex items-start justify-between">
+        <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+        <Skeleton className="h-5 w-16 rounded-md" />
+      </div>
+      <div className="space-y-2 mt-2">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+      </div>
+      <div className="mt-2 pt-3 border-t flex items-center justify-end">
+        <Skeleton className="h-3 w-12" />
       </div>
     </div>
   );
@@ -53,8 +59,8 @@ export default function TeamPage() {
       </motion.div>
 
       {isLoading ? (
-        <div className="space-y-2">
-          {Array(6).fill(0).map((_, i) => <TeamMemberSkeleton key={i} />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array(8).fill(0).map((_, i) => <TeamMemberSkeleton key={i} />)}
         </div>
       ) : users.length === 0 ? (
         <EmptyState
@@ -63,28 +69,40 @@ export default function TeamPage() {
           description="No users have been added yet."
         />
       ) : (
-        <div className="space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {users.map((user, i) => (
             <motion.div
               key={user.id}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04 }}
-              className="flex items-center gap-4 p-4 rounded-2xl border bg-card hover:bg-accent/40 transition-colors"
+              className="flex flex-col gap-4 p-5 rounded-2xl border bg-card hover:border-primary/50 hover:shadow-sm transition-all group relative overflow-hidden cursor-pointer"
             >
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-white text-sm font-semibold ${
-                  AVATAR_COLORS[i % AVATAR_COLORS.length]
-                }`}
-              >
-                {getInitials(user.full_name)}
+              <div className="flex items-start justify-between gap-2">
+                <div
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white text-base font-semibold shadow-sm ${
+                    AVATAR_COLORS[i % AVATAR_COLORS.length]
+                  }`}
+                >
+                  {getInitials(user.full_name)}
+                </div>
+                <div className="px-2.5 py-1 rounded-md bg-secondary/50 text-[10px] font-medium text-secondary-foreground uppercase tracking-wider">
+                  Member
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{user.full_name}</p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1 truncate mt-0.5">
-                  <Mail className="w-3 h-3 shrink-0" />
-                  {user.email}
-                </p>
+              
+              <div className="flex-1 min-w-0 mt-2">
+                <h3 className="text-base font-semibold truncate group-hover:text-primary transition-colors">
+                  {user.full_name}
+                </h3>
+                <div className="flex items-center gap-1.5 mt-1.5 text-muted-foreground">
+                  <Mail className="w-3.5 h-3.5 shrink-0" />
+                  <p className="text-sm truncate">{user.email}</p>
+                </div>
+              </div>
+              
+              <div className="mt-2 pt-3 border-t flex items-center justify-end text-xs text-muted-foreground/70 font-medium">
+                <span className="flex items-center gap-1"><Users className="w-3 h-3" /> Team</span>
               </div>
             </motion.div>
           ))}

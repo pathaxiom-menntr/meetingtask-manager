@@ -22,6 +22,7 @@ export default function TasksPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"my" | "team">("my");
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks"],
@@ -49,6 +50,27 @@ export default function TasksPage() {
     },
     onSuccess: () => {
       toast.success("Task completed!");
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    },
+  });
+
+  const uncompleteMutation = useMutation({
+    mutationFn: tasksService.uncompleteTask,
+    onMutate: async (taskId) => {
+      await queryClient.cancelQueries({ queryKey: ["tasks"] });
+      const prev = queryClient.getQueryData<Task[]>(["tasks"]);
+      queryClient.setQueryData<Task[]>(["tasks"], (old) =>
+        old?.map((t) => t.id === taskId ? { ...t, status: "pending" as const, completed_at: null } : t)
+      );
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => {
+      queryClient.setQueryData(["tasks"], ctx?.prev);
+      toast.error("Failed to undo task completion");
+    },
+    onSuccess: () => {
+      toast.success("Task marked as pending");
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
     },
@@ -83,6 +105,11 @@ export default function TasksPage() {
     { label: "Completed", value: "completed" },
   ];
 
+  const { data: teamPendingTasks = [], isLoading: teamLoading } = useQuery({
+    queryKey: ["team-pending-tasks"],
+    queryFn: () => tasksService.getTeamPendingTasks({ limit: 100 }),
+  });
+
   return (
     <div className="w-full space-y-6">
       {/* Header */}
@@ -101,66 +128,131 @@ export default function TasksPage() {
             <Plus className="w-4 h-4" /> New Task
           </button>
         </div>
-
-        {/* Filter tabs */}
-        <div className="flex items-center gap-1 mt-4 bg-muted p-1 rounded-xl w-fit">
-          {filters.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                filter === f.value
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
       </motion.div>
 
-      {/* Task list */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array(5).fill(0).map((_, i) => <TaskCardSkeleton key={i} />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <EmptyState
-          icon={CheckSquare}
-          title="No tasks found"
-          description={
-            filter === "all"
-              ? "Create your first task or upload a meeting transcript."
-              : `No ${filter} tasks.`
-          }
-          action={
-            filter === "all" ? (
-              <button
-                onClick={() => setCreateOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition"
-              >
-                <Plus className="w-4 h-4" /> Create Task
-              </button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <AnimatePresence>
-          <div className="space-y-3">
-            {filtered.map((task, i) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                users={users}
-                index={i}
-                onComplete={(id) => completeMutation.mutate(id)}
-                onDelete={handleDelete}
+      {/* Tab Switcher */}
+      <div className="flex items-center gap-6 border-b">
+        <button
+          onClick={() => setActiveTab("my")}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors relative -mb-[1px] ${
+            activeTab === "my"
+              ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          My Tasks
+        </button>
+        <button
+          onClick={() => setActiveTab("team")}
+          className={`pb-3 text-sm font-medium border-b-2 transition-colors relative -mb-[1px] ${
+            activeTab === "team"
+              ? "border-indigo-500 text-indigo-600 dark:text-indigo-400"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Team Pending Tasks
+        </button>
+      </div>
+
+      <div className="w-full">
+        {activeTab === "my" ? (
+          <div className="space-y-4 mt-4">
+            <div className="flex items-center">
+              <h2 className="text-lg font-semibold tracking-tight sr-only">My Tasks</h2>
+              {/* Filter tabs */}
+              <div className="flex items-center gap-1 bg-muted p-1 rounded-xl w-fit">
+                {filters.map((f) => (
+                  <button
+                    key={f.value}
+                    onClick={() => setFilter(f.value)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      filter === f.value
+                        ? "bg-background shadow-sm text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Task list */}
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Array(6).fill(0).map((_, i) => <TaskCardSkeleton key={i} />)}
+              </div>
+            ) : filtered.length === 0 ? (
+              <EmptyState
+                icon={CheckSquare}
+                title="No tasks found"
+                description={
+                  filter === "all"
+                    ? "Create your first task or upload a meeting transcript."
+                    : `No ${filter} tasks.`
+                }
+                action={
+                  filter === "all" ? (
+                    <button
+                      onClick={() => setCreateOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition"
+                    >
+                      <Plus className="w-4 h-4" /> Create Task
+                    </button>
+                  ) : undefined
+                }
               />
-            ))}
+            ) : (
+              <AnimatePresence>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {filtered.map((task, i) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      users={users}
+                      index={i}
+                      onComplete={(id) => completeMutation.mutate(id)}
+                      onUncomplete={(id) => uncompleteMutation.mutate(id)}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+              </AnimatePresence>
+            )}
           </div>
-        </AnimatePresence>
-      )}
+        ) : (
+          <div className="space-y-4 mt-2">
+            <h2 className="text-lg font-semibold tracking-tight sr-only">Team Pending Tasks</h2>
+            {teamLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {Array(6).fill(0).map((_, i) => <TaskCardSkeleton key={i} />)}
+              </div>
+            ) : teamPendingTasks.length === 0 ? (
+              <EmptyState
+                icon={CheckSquare}
+                title="No pending team tasks"
+                description="Your team is all caught up!"
+              />
+            ) : (
+              <AnimatePresence>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {teamPendingTasks.map((task, i) => (
+                    <TaskCard
+                      key={task.id}
+                      task={task}
+                      users={users}
+                      index={i}
+                      onComplete={(id) => completeMutation.mutate(id)}
+                      onUncomplete={(id) => uncompleteMutation.mutate(id)}
+                      onDelete={handleDelete}
+                    />
+                  ))}
+                </div>
+              </AnimatePresence>
+            )}
+          </div>
+        )}
+      </div>
 
       <CreateTaskModal
         open={createOpen}

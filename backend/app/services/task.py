@@ -109,6 +109,26 @@ class TaskService:
         )
 
     @staticmethod
+    def get_team_pending_tasks(
+        db: Session,
+        current_user: User,
+        skip: int = 0,
+        limit: int = 50
+    ):
+        return (
+            db.query(Task)
+            .join(User, User.id == Task.assignee_id)
+            .filter(
+                User.team_code == current_user.team_code,
+                Task.status == "pending"
+            )
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+
+    @staticmethod
     def get_task_by_id(
         db: Session,
         task_id: int,
@@ -238,6 +258,47 @@ class TaskService:
         db.refresh(task)
 
         logger.info("Task completed: id=%s user_id=%s", task_id, current_user.id)
+        return task
+
+    @staticmethod
+    def uncomplete_task(
+        db: Session,
+        task_id: int,
+        current_user: User
+    ):
+        task = (
+            db.query(Task)
+            .filter(Task.id == task_id)
+            .first()
+        )
+
+        if not task:
+            raise HTTPException(
+                status_code=404,
+                detail="Task not found"
+            )
+
+        # Only the assignee can uncomplete the task
+        if task.assignee_id != current_user.id:
+            raise HTTPException(
+                status_code=403,
+                detail="Only the assignee can uncomplete this task"
+            )
+
+        # Prevent uncompleting an already pending task
+        if task.status == "pending":
+            raise HTTPException(
+                status_code=400,
+                detail="Task is already pending"
+            )
+
+        task.status = "pending"
+        task.completed_at = None
+
+        db.commit()
+        db.refresh(task)
+
+        logger.info("Task uncompleted: id=%s user_id=%s", task_id, current_user.id)
         return task
 
     @staticmethod
@@ -455,10 +516,13 @@ class TaskService:
             auto_assigned = False
 
             if assignee_name:
-                # Case-insensitive user lookup using full_name
+                # Case-insensitive user lookup using full_name within the same team
                 assignee = (
                     db.query(User)
-                    .filter(User.full_name.ilike(f"%{assignee_name}%"))
+                    .filter(
+                        User.full_name.ilike(f"%{assignee_name}%"),
+                        User.team_code == current_user.team_code
+                    )
                     .first()
                 )
 
@@ -485,7 +549,10 @@ class TaskService:
             if assigner_name:
                 assigner_user = (
                     db.query(User)
-                    .filter(User.full_name.ilike(f"%{assigner_name}%"))
+                    .filter(
+                        User.full_name.ilike(f"%{assigner_name}%"),
+                        User.team_code == current_user.team_code
+                    )
                     .first()
                 )
                 if assigner_user:
