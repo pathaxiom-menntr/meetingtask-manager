@@ -43,7 +43,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
+        
         # Points the frontend at the backend. Must be the PUBLIC URL when deployed!
+
+        # Points the frontend at the backend containe
+        
         NEXT_PUBLIC_API_URL: http://4.213.227.99:8000
     environment:
       PORT: 3000
