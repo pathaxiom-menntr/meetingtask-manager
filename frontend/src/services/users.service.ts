@@ -11,4 +11,11 @@ export const usersService = {
     const res = await api.get<User>(`/users/${id}`);
     return res.data;
   },
+
+  updatePassword: async (data: {
+    current_password: string;
+    new_password: string;
+  }): Promise<void> => {
+    await api.post("/users/update-password", data);
+  },
 };
