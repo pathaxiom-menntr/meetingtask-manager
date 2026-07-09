@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 
 import {
@@ -315,19 +315,14 @@ export function TaskCard({
 
           {task.description && (
             <div>
-              <AnimatePresence initial={false}>
-                <motion.p
-                  key={expanded ? "expanded" : "collapsed"}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className={cn(
-                    "text-[11px] text-muted-foreground leading-relaxed",
-                    !expanded && "line-clamp-2"
-                  )}
-                >
-                  {task.description}
-                </motion.p>
-              </AnimatePresence>
+              <p
+                className={cn(
+                  "text-[11px] text-muted-foreground leading-relaxed transition-all duration-300 break-all",
+                  !expanded && "line-clamp-2"
+                )}
+              >
+                {task.description}
+              </p>
               {hasLongDesc && (
                 <button
                   onClick={() => setExpanded((v) => !v)}

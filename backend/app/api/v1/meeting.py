@@ -72,10 +72,21 @@ def upload_transcript(
         current_user=current_user
     )
 
-    # Step 3: Generate AI tasks
-    ai_tasks = AIService.generate_tasks(transcript)
+    # Step 3: Fetch team members so the AI can match names accurately
+    team_members = (
+        db.query(User)
+        .filter(User.team_code == current_user.team_code)
+        .all()
+    )
+    team_member_names = [u.full_name for u in team_members if u.full_name]
 
-    # Step 4: Save generated tasks
+    # Step 4: Generate AI tasks with team context
+    ai_tasks = AIService.generate_tasks(
+        transcript=transcript,
+        team_members=team_member_names,
+    )
+
+    # Step 5: Save generated tasks
     result = TaskService.create_ai_tasks(
         db=db,
         meeting_id=meeting.id,
@@ -83,7 +94,7 @@ def upload_transcript(
         current_user=current_user
     )
 
-    # Step 5: Return everything
+    # Step 6: Return everything
     return {
         "meeting": meeting,
         "tasks": result["created"],
