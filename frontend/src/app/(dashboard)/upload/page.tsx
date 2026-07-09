@@ -29,10 +29,24 @@ export default function UploadPage() {
   const [result, setResult] = useState<MeetingUploadResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const ALLOWED_EXTENSIONS = [".txt", ".md", ".pdf", ".docx"];
+
   const onDrop = useCallback((accepted: File[]) => {
     if (accepted.length > 0) {
-      setFile(accepted[0]);
-      setTitle(accepted[0].name.replace(/\.[^.]+$/, ""));
+      const selectedFile = accepted[0];
+      const fileName = selectedFile.name.toLowerCase();
+      const hasValidExtension = ALLOWED_EXTENSIONS.some((ext) =>
+        fileName.endsWith(ext)
+      );
+      if (!hasValidExtension) {
+        setError(
+          `Unsupported file type. Only ${ALLOWED_EXTENSIONS.join(", ")} files are supported.`
+        );
+        return;
+      }
+      setError(null);
+      setFile(selectedFile);
+      setTitle(selectedFile.name.replace(/\.[^.]+$/, ""));
     }
   }, []);
 
@@ -46,6 +60,11 @@ export default function UploadPage() {
     },
     maxFiles: 1,
     disabled: stage !== "idle",
+    onDropRejected: () => {
+      setError(
+        "Unsupported file type. Only PDF, DOCX, TXT, and MD files are supported."
+      );
+    },
   });
 
   const handleUpload = async () => {
@@ -54,21 +73,36 @@ export default function UploadPage() {
       return;
     }
 
+    // Pre-flight: reject empty / whitespace-only text files before hitting the network
+    if (file.name.toLowerCase().endsWith(".txt") || file.name.toLowerCase().endsWith(".md")) {
+      const content = await file.text();
+      if (!content.trim()) {
+        const emptyMsg = "The file appears to be empty. Please upload a file with content.";
+        setError(emptyMsg);
+        toast.error(emptyMsg);
+        return;
+      }
+    }
+
     setError(null);
     setStage("uploading");
     setProgress(0);
 
-    try {
-      // Simulate stages with actual upload
-      setTimeout(() => setStage("extracting"), 800);
-      setTimeout(() => setStage("generating"), 2000);
+    // Keep references so we can cancel them if the upload fails before they fire
+    const extractingTimer = setTimeout(() => setStage("extracting"), 800);
+    const generatingTimer = setTimeout(() => setStage("generating"), 2000);
 
+    try {
       const data = await meetingsService.uploadTranscript(title, file, setProgress);
       setResult(data);
       setStage("done");
       queryClient.invalidateQueries({ queryKey: ["meetings", "tasks", "dashboard"] });
       toast.success(`${data.tasks.length} task${data.tasks.length !== 1 ? "s" : ""} generated!`);
     } catch (err: unknown) {
+      // Cancel pending stage transitions so the error state is not overwritten
+      clearTimeout(extractingTimer);
+      clearTimeout(generatingTimer);
+
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
         "Upload failed";

@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import {
   Loader2, Mail, Lock, Eye, EyeOff,
-  Sparkles, CheckSquare, Clock, ShieldCheck, Users,
+  Sparkles, CheckSquare, Clock, ShieldCheck, Users, AlertCircle,
 } from "lucide-react";
 import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
@@ -31,6 +31,7 @@ export default function LoginPage() {
   const { setTokens, setUser } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const {
     register,
@@ -40,6 +41,7 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginForm) => {
     setLoading(true);
+    setServerError(null);
     try {
       const tokens = await authService.login(data);
       setTokens(tokens.access_token, tokens.refresh_token);
@@ -50,7 +52,8 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        "Invalid credentials";
+        "Invalid credentials. Please check your email, password, and team code.";
+      setServerError(msg);
       toast.error(msg);
     } finally {
       setLoading(false);
@@ -204,6 +207,14 @@ export default function LoginPage() {
             </p>
           )}
         </div>
+
+        {/* Inline server error banner */}
+        {serverError && (
+          <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-red-500" />
+            <p className="text-xs leading-relaxed font-medium">{serverError}</p>
+          </div>
+        )}
 
         <button
           type="submit"

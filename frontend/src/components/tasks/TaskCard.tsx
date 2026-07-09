@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+
+
 import {
   CheckCircle2,
   Circle,
@@ -364,19 +366,14 @@ export function TaskCard({
         {/* ── Row 3: Description (expandable) ── */}
         {task.description && (
           <div className="ml-6 mb-2">
-            <AnimatePresence initial={false}>
-              <motion.p
-                key={expanded ? "expanded" : "collapsed"}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className={cn(
-                  "text-xs text-muted-foreground leading-relaxed",
-                  !expanded && "line-clamp-2"
-                )}
-              >
-                {task.description}
-              </motion.p>
-            </AnimatePresence>
+            <p
+              className={cn(
+                "text-xs text-muted-foreground leading-relaxed transition-all duration-300",
+                !expanded && "line-clamp-2"
+              )}
+            >
+              {task.description}
+            </p>
 
             {hasLongDesc && (
               <button
