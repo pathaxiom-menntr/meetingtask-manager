@@ -31,17 +31,13 @@ const bottomItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const open = useSidebarStore((s) => s.open);
+  const mobileOpen = useSidebarStore((s) => s.mobileOpen);
+  const closeMobile = useSidebarStore((s) => s.closeMobile);
 
-  return (
-    <motion.aside
-      key="sidebar"
-      initial={false}
-      animate={{ width: open ? 240 : 72 }}
-      transition={{ duration: 0.22, ease: "easeInOut" }}
-      className="hidden md:flex flex-col h-full bg-background border-r shrink-0 overflow-hidden"
-    >
+  const renderContent = (isExpanded: boolean, onClickLink?: () => void) => (
+    <>
       {/* Logo */}
-      <div className={cn("flex items-center h-16 border-b shrink-0", open ? "px-5 gap-3" : "px-0 justify-center")}>
+      <div className={cn("flex items-center h-16 border-b shrink-0", isExpanded ? "px-5 gap-3" : "px-0 justify-center")}>
         <div className="relative shrink-0">
           <div
             className="absolute inset-0 rounded-xl blur-md opacity-50"
@@ -65,7 +61,7 @@ export function Sidebar() {
             </svg>
           </div>
         </div>
-        {open && (
+        {isExpanded && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col leading-none whitespace-nowrap">
             <span className="font-bold text-sm tracking-tight text-foreground">MeetingTask</span>
             <span className="text-[10px] text-indigo-400 font-medium tracking-widest uppercase mt-0.5">AI</span>
@@ -74,52 +70,93 @@ export function Sidebar() {
       </div>
 
       {/* Main nav */}
-      <nav className={cn("flex-1 py-5 space-y-0.5", open ? "px-3" : "px-3")}>
+      <nav className={cn("flex-1 py-5 space-y-0.5", isExpanded ? "px-3" : "px-3")}>
         {navItems.map(({ label, href, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
               key={href}
               href={href}
-              title={!open ? label : undefined}
+              onClick={onClickLink}
+              title={!isExpanded ? label : undefined}
               className={cn(
                 "flex items-center rounded-xl text-sm font-medium transition-all whitespace-nowrap",
-                open ? "px-3 py-2 gap-3" : "px-0 py-3 justify-center",
+                isExpanded ? "px-3 py-2 gap-3" : "px-0 py-3 justify-center",
                 active
                   ? "bg-indigo-600 text-white"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
               <Icon className="w-5 h-5 shrink-0" />
-              {open && <span>{label}</span>}
+              {isExpanded && <span>{label}</span>}
             </Link>
           );
         })}
       </nav>
 
       {/* Bottom nav */}
-      <div className={cn("py-4 border-t space-y-0.5", open ? "px-3" : "px-3")}>
+      <div className={cn("py-4 border-t space-y-0.5", isExpanded ? "px-3" : "px-3")}>
         {bottomItems.map(({ label, href, icon: Icon }) => {
           const active = pathname === href;
           return (
             <Link
               key={href}
               href={href}
-              title={!open ? label : undefined}
+              onClick={onClickLink}
+              title={!isExpanded ? label : undefined}
               className={cn(
                 "flex items-center rounded-xl text-sm font-medium transition-all whitespace-nowrap",
-                open ? "px-3 py-2 gap-3" : "px-0 py-3 justify-center",
+                isExpanded ? "px-3 py-2 gap-3" : "px-0 py-3 justify-center",
                 active
                   ? "bg-indigo-600 text-white"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
               <Icon className="w-5 h-5 shrink-0" />
-              {open && <span>{label}</span>}
+              {isExpanded && <span>{label}</span>}
             </Link>
           );
         })}
       </div>
-    </motion.aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeMobile}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+              className="fixed inset-y-0 left-0 w-64 bg-background border-r z-50 flex flex-col md:hidden"
+            >
+              {renderContent(true, closeMobile)}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Sidebar */}
+      <motion.aside
+        key="desktop-sidebar"
+        initial={false}
+        animate={{ width: open ? 240 : 72 }}
+        transition={{ duration: 0.22, ease: "easeInOut" }}
+        className="hidden md:flex flex-col h-full bg-background border-r shrink-0 overflow-hidden z-30 relative"
+      >
+        {renderContent(open)}
+      </motion.aside>
+    </>
   );
 }

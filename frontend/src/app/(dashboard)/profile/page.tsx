@@ -6,6 +6,7 @@ import { User, Mail, Key, Save, Loader2 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 import { useState } from "react";
 import { toast } from "sonner";
+import { usersService } from "@/services/users.service";
 
 export default function ProfilePage() {
   const { user } = useAuthStore();
@@ -17,6 +18,42 @@ export default function ProfilePage() {
     await new Promise((r) => setTimeout(r, 800)); // placeholder — hook up to API
     toast.success("Profile updated!");
     setSaving(false);
+  };
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+
+  const handleUpdatePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setPasswordSaving(true);
+    try {
+      await usersService.updatePassword({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      toast.success("Password updated successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || "Failed to update password");
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   return (
@@ -97,20 +134,45 @@ export default function ProfilePage() {
         </h2>
 
         <div className="space-y-4">
-          {["Current Password", "New Password", "Confirm New Password"].map((label) => (
-            <div key={label} className="space-y-1.5">
-              <label className="text-sm font-medium">{label}</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-              />
-            </div>
-          ))}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Current Password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">New Password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Confirm New Password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            />
+          </div>
         </div>
 
-        <button className="flex items-center gap-2 px-4 py-2.5 border hover:bg-accent rounded-xl text-sm font-medium transition">
-          <Key className="w-4 h-4" /> Update Password
+        <button 
+          onClick={handleUpdatePassword}
+          disabled={passwordSaving}
+          className="flex items-center gap-2 px-4 py-2.5 border hover:bg-accent rounded-xl text-sm font-medium transition disabled:opacity-60"
+        >
+          {passwordSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
+          {passwordSaving ? "Updating..." : "Update Password"}
         </button>
       </motion.div>
     </div>

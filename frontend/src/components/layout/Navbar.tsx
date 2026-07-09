@@ -33,6 +33,7 @@ export function Navbar() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const toggleSidebar = useSidebarStore((s) => s.toggle);
+  const toggleMobile = useSidebarStore((s) => s.toggleMobile);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -132,10 +133,19 @@ export function Navbar() {
 
   return (
     <header className="h-16 border-b flex items-center gap-3 px-4 bg-background shrink-0">
-      {/* Hamburger toggle */}
+      {/* Hamburger toggle (mobile) */}
+      <button
+        onClick={toggleMobile}
+        className="md:hidden w-9 h-9 rounded-xl hover:bg-accent flex items-center justify-center transition shrink-0"
+        aria-label="Toggle mobile sidebar"
+      >
+        <Menu className="w-4 h-4 text-muted-foreground" />
+      </button>
+
+      {/* Hamburger toggle (desktop) */}
       <button
         onClick={toggleSidebar}
-        className="w-9 h-9 rounded-xl hover:bg-accent flex items-center justify-center transition shrink-0"
+        className="hidden md:flex w-9 h-9 rounded-xl hover:bg-accent items-center justify-center transition shrink-0"
         aria-label="Toggle sidebar"
       >
         <Menu className="w-4 h-4 text-muted-foreground" />
