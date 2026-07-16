@@ -25,6 +25,19 @@ class Settings(BaseSettings):
     # Max transcript characters sent to AI (prevents runaway costs/timeouts)
     MAX_TRANSCRIPT_CHARS: int = 200_000
 
+    # ── AI Pipeline tuning (all optional — sensible defaults provided) ──────
+    # Max characters per transcript chunk for long-meeting support (≈ 8K tokens)
+    AI_CHUNK_SIZE_CHARS: int = 32_000
+
+    # Enable the second LLM validation pass (catches missed tasks & hallucinations)
+    AI_VALIDATION_PASS: bool = True
+
+    # Max retry attempts on Azure OpenAI API errors (exponential back-off)
+    AI_MAX_RETRIES: int = 3
+
+    # Tasks with confidence below this floor are dropped (0.50 = keep almost everything)
+    AI_MIN_CONFIDENCE: float = 0.50
+
     class Config:
         env_file = ".env"
 

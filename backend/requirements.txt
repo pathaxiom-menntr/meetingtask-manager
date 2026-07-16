@@ -21,6 +21,7 @@ email-validator==2.2.0
 
 # AI
 openai==1.91.0
+dateparser>=1.2.0
 
 # File parsing (transcript upload)
 PyPDF2==3.0.1
