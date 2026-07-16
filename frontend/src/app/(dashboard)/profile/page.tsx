@@ -9,15 +9,25 @@ import { toast } from "sonner";
 import { usersService } from "@/services/users.service";
 
 export default function ProfilePage() {
-  const { user } = useAuthStore();
+  const { user, setUser } = useAuthStore();
   const [saving, setSaving] = useState(false);
   const [name, setName] = useState(user?.full_name ?? "");
 
   const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 800)); // placeholder — hook up to API
-    toast.success("Profile updated!");
-    setSaving(false);
+    try {
+      const updated = await usersService.updateProfile({ full_name: name.trim() });
+      setUser(updated);
+      toast.success("Profile updated!");
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const [currentPassword, setCurrentPassword] = useState("");

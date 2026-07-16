@@ -12,6 +12,11 @@ export const usersService = {
     return res.data;
   },
 
+  updateProfile: async (data: { full_name: string }): Promise<User> => {
+    const res = await api.put<User>("/users/me", data);
+    return res.data;
+  },
+
   updatePassword: async (data: {
     current_password: string;
     new_password: string;

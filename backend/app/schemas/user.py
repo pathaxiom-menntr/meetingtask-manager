@@ -16,3 +16,12 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class UpdateProfileRequest(BaseModel):
+    full_name: str
+
+
+class UpdatePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str

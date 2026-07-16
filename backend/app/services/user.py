@@ -2,8 +2,8 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.schemas.user import UserCreate
-from app.core.security import hash_password
+from app.schemas.user import UserCreate, UpdateProfileRequest, UpdatePasswordRequest
+from app.core.security import hash_password, verify_password
 
 
 class UserService:
@@ -76,3 +76,33 @@ class UserService:
             )
 
         return user
+
+    @staticmethod
+    def update_profile(
+        db: Session,
+        current_user: User,
+        data: UpdateProfileRequest
+    ) -> User:
+        current_user.full_name = data.full_name
+        db.commit()
+        db.refresh(current_user)
+        return current_user
+
+    @staticmethod
+    def update_password(
+        db: Session,
+        current_user: User,
+        data: UpdatePasswordRequest
+    ) -> None:
+        if not verify_password(data.current_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=400,
+                detail="Current password is incorrect"
+            )
+        if len(data.new_password) < 6:
+            raise HTTPException(
+                status_code=422,
+                detail="New password must be at least 6 characters"
+            )
+        current_user.password_hash = hash_password(data.new_password)
+        db.commit()

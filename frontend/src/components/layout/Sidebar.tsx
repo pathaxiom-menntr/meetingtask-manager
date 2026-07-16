@@ -11,7 +11,6 @@ import {
   Upload,
   Users,
   User,
-  Settings,
 } from "lucide-react";
 import { useSidebarStore } from "@/store/sidebar.store";
 
@@ -25,7 +24,6 @@ const navItems = [
 
 const bottomItems = [
   { label: "Profile", href: "/profile", icon: User },
-  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 export function Sidebar() {
