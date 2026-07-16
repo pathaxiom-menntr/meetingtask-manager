@@ -1,15 +1,23 @@
-# docker-compose.yml — local smoke-test before pushing to Azure
-# Usage:
-#   docker compose up --build
-#
-# This mirrors the Azure topology (backend + frontend containers) but
-# includes a local Postgres so you don't need a cloud DB for testing.
-#
-# DO NOT commit real secrets — use a local .env.docker file.
-
 version: "3.9"
 
 services:
+  # ── PostgreSQL ────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localpassword
+      POSTGRES_DB: meeting_task_manager
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d meeting_task_manager"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
 
   # ── FastAPI Backend ───────────────────────────────────────────
   backend:
@@ -17,8 +25,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      # host.docker.internal points to the machine running Docker (so it doesn't loop back into the container)
-      DATABASE_URL: postgresql://postgres:Sankeerth%4015@host.docker.internal:5432/meeting_task_manager
+      DATABASE_URL: postgresql://postgres:localpassword@db:5432/meeting_task_manager
       SECRET_KEY: local-dev-secret-change-in-production
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
@@ -26,34 +33,39 @@ services:
       ALLOWED_ORIGINS: "http://4.213.227.99:3000"
       LOG_LEVEL: info
       WORKERS: 2
-      # Azure OpenAI — fill in or use a .env file
+
       AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-placeholder}
       AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-https://placeholder.openai.azure.com/}
       AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-12-01-preview}
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-gpt4}
+
     ports:
       - "8000:8000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+
+    depends_on:
+      db:
+        condition: service_healthy
+
     restart: on-failure
 
-  # ── Next.js Frontend ─────────────────────────────────────────
+  # ── Next.js Frontend ──────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        
-        # Points the frontend at the backend. Must be the PUBLIC URL when deployed!
-
-        # Points the frontend at the backend containe
-        
         NEXT_PUBLIC_API_URL: http://4.213.227.99:8000
+
     environment:
       PORT: 3000
+
     ports:
       - "3000:3000"
+
     depends_on:
       - backend
+
     restart: on-failure
 
+volumes:
+  postgres_data:
