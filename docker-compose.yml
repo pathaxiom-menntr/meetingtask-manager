@@ -1,7 +1,7 @@
 version: "3.9"
 
 services:
-  # ── PostgreSQL ────────────────────────────────────────────────
+  # ── PostgreSQL
   db:
     image: postgres:16-alpine
     environment:
@@ -19,7 +19,7 @@ services:
       - "5432:5432"
     restart: unless-stopped
 
-  # ── FastAPI Backend ───────────────────────────────────────────
+  # ── FastAPI Backend
   backend:
     build:
       context: ./backend
