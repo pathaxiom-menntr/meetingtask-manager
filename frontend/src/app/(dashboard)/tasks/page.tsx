@@ -11,12 +11,14 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { TaskCardSkeleton } from "@/components/common/LoadingSkeleton";
 import { ConfirmDialog, useConfirmDialog } from "@/components/common/ConfirmDialog";
 import { CreateTaskModal } from "@/components/tasks/CreateTaskModal";
+import { useAuthStore } from "@/store/auth.store";
 import { useState } from "react";
 import type { Task } from "@/types";
 
 type Filter = "all" | "pending" | "completed";
 
 export default function TasksPage() {
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const { state: confirmState, confirm, close: closeConfirm } = useConfirmDialog();
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -93,7 +95,9 @@ export default function TasksPage() {
     });
   };
 
-  const filtered = tasks.filter((t) => {
+  const myTasks = tasks.filter((t) => t.assignee_id === user?.id);
+
+  const filtered = myTasks.filter((t) => {
     if (filter === "pending") return t.status === "pending";
     if (filter === "completed") return t.status === "completed";
     return true;
